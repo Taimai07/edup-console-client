@@ -21,10 +21,15 @@ jobs:
       - run: npm run prepare-assets
       - run: npm test
       - run: npm run build:win
+      - name: Verify overwrite install and protected Windows storage on isolated runner
+        shell: pwsh
+        run: ./test/windows-upgrade.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/windows-upgrade-receipt.json
       - name: Publish new version without replacing existing releases
         shell: pwsh
         env:

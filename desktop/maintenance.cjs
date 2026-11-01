@@ -1,4 +1,4 @@
-const fs=require('node:fs'),path=require('node:path'),{createHash}=require('node:crypto');
+const fs=require('node:fs'),path=require('node:path'),{createHash,randomBytes}=require('node:crypto');
 const {validateRelease,verifyDownload}=require('../shared/updates.cjs');
 const allowed=new Set(['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com']);
 async function boundedDownload(url,max=500*1024*1024){
@@ -12,12 +12,35 @@ async function boundedDownload(url,max=500*1024*1024){
   const pieces=[];let size=0;for await(const c of r.body){size+=c.length;if(size>max)throw Error('DOWNLOAD_TOO_LARGE');pieces.push(c);}return Buffer.concat(pieces);
  }throw Error('DOWNLOAD_REDIRECT_LIMIT');
 }
+async function downloadFile(url,manifest,target){
+ let current=new URL(url),response;
+ for(let n=0;n<6;n++){
+  if(current.protocol!=='https:'||current.username||current.password||!allowed.has(current.hostname))throw Error('DOWNLOAD_HOST_INVALID');
+  const r=await fetch(current,{redirect:'manual',signal:AbortSignal.timeout(120000)});
+  if([301,302,303,307,308].includes(r.status)){const next=r.headers.get('location');await r.body?.cancel();if(!next)throw Error('DOWNLOAD_REDIRECT');current=new URL(next,current);continue;}
+  if(!r.ok)throw Error('DOWNLOAD_FAILED');response=r;break;
+ }
+ if(!response)throw Error('DOWNLOAD_REDIRECT_LIMIT');
+ const length=response.headers.get('content-length');if(length!==null&&Number(length)!==manifest.size)throw Error('UPDATE_FILE_MISMATCH');
+ if((response.headers.get('content-type')||'').includes('text/html'))throw Error('UPDATE_NOT_EXECUTABLE');
+ fs.mkdirSync(path.dirname(target),{recursive:true});const space=fs.statfsSync(path.dirname(target));if(space.bavail*space.bsize<manifest.size+32*1024*1024)throw Error('UPDATE_DISK_FULL');
+ const temp=target+'.'+randomBytes(8).toString('hex')+'.partial',hash=createHash('sha256');let size=0,head=Buffer.alloc(0),fd;
+ try{
+  fd=fs.openSync(temp,'wx',0o600);
+  for await(const c of response.body){size+=c.length;if(size>manifest.size)throw Error('UPDATE_FILE_MISMATCH');hash.update(c);if(head.length<2)head=Buffer.concat([head,c]).subarray(0,2);let offset=0;while(offset<c.length){const n=fs.writeSync(fd,c,offset,c.length-offset);if(n===0)throw Error('UPDATE_DISK_WRITE_FAILED');offset+=n;}}
+  fs.fsyncSync(fd);fs.closeSync(fd);fd=undefined;
+  if(size!==manifest.size||hash.digest('hex')!==manifest.sha256)throw Error('UPDATE_FILE_MISMATCH');if(head.toString()!=='MZ')throw Error('UPDATE_NOT_EXECUTABLE');
+  fs.renameSync(temp,target);
+  if(process.platform==='win32')fs.writeFileSync(target+':Zone.Identifier','[ZoneTransfer]\r\nZoneId=3\r\nHostUrl='+url+'\r\n');
+  return target;
+ }finally{if(fd!==undefined)fs.closeSync(fd);try{fs.unlinkSync(temp);}catch{}}
+}
 class Updates{
  constructor({version,publicKey,dir,logger}){this.version=version;this.publicKey=publicKey;this.dir=dir;this.logger=logger;this.state={state:'idle',currentVersion:version};this.manifest=null;this.file=null;}
- async check(){this.state={state:'checking',currentVersion:this.version};try{let b;
+ async check(){if(this.state.state==='downloading')return this.state;this.state={state:'checking',currentVersion:this.version};try{let b;
   try{const r=await fetch('https://console.eduplinkaudio.com/updates/stable.json',{redirect:'error',signal:AbortSignal.timeout(20000)});if(!r.ok)throw Error('UPDATE_NOT_PUBLISHED');const text=await r.text();if(Buffer.byteLength(text)>65536)throw Error('UPDATE_MANIFEST_INVALID');b=Buffer.from(text);}catch{b=await boundedDownload('https://github.com/Taimai07/edup-console-client/releases/latest/download/stable.json',65536);}
   const m=validateRelease(JSON.parse(b),{publicKey:this.publicKey,currentVersion:this.version});this.manifest=m.available?m:null;this.state={state:m.available?'available':'current',currentVersion:this.version,version:m.version,notes:m.notes||''};}catch(e){this.state={state:e.message==='UPDATE_NOT_PUBLISHED'?'not_published':'check_failed',currentVersion:this.version,code:e.message};this.logger.write('update_check',{code:e.message});}return this.state;}
- async download(){if(!this.manifest)throw Error('UPDATE_NOT_AVAILABLE');this.file=null;this.state={...this.state,state:'downloading'};try{const bytes=await boundedDownload(this.manifest.url,this.manifest.size);verifyDownload(bytes,this.manifest);fs.mkdirSync(this.dir,{recursive:true});this.file=path.join(this.dir,'EDUPLINK-Setup-'+this.manifest.version+'.exe');fs.writeFileSync(this.file,bytes);this.state={...this.state,state:'ready'};return this.state;}catch(e){this.state={...this.state,state:'download_failed',code:e.message};this.logger.write('update_download',{code:e.message});throw e;}}
+ async download(){if(!this.manifest)throw Error('UPDATE_NOT_AVAILABLE');if(this.state.state==='downloading')throw Error('UPDATE_DOWNLOAD_IN_PROGRESS');this.file=null;this.state={...this.state,state:'downloading'};try{const target=path.join(this.dir,'EDUPLINK-Setup-'+this.manifest.version+'.exe');await downloadFile(this.manifest.url,this.manifest,target);this.file=target;this.state={...this.state,state:'ready'};return this.state;}catch(e){this.state={...this.state,state:'download_failed',code:e.message};this.logger.write('update_download',{code:e.message});throw e;}}
  verifiedInstaller(){if(!this.file||!this.manifest||this.state.state!=='ready')throw Error('UPDATE_NOT_READY');verifyDownload(fs.readFileSync(this.file),this.manifest);return this.file;}
 }
-module.exports={Updates,boundedDownload};
+module.exports={Updates,boundedDownload,downloadFile};

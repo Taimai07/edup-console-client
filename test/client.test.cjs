@@ -1,4 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+require('./recovery.test.cjs');
 const p=require('../shared/protocol.cjs'),u=require('../shared/updates.cjs'),{sanitize}=require('../shared/logging.cjs');
 test('request signature binds body, route, timestamp and client version',()=>{const k=crypto.generateKeyPairSync('ed25519'),x={method:'POST',route:'/api/drafts',body:'{}',time:'1793560000000',nonce:'0'.repeat(32),version:p.VERSION},s=p.signRequest(k.privateKey,x);assert.ok(p.verifyRequest(k.publicKey,s,x));assert.equal(p.verifyRequest(k.publicKey,s,{...x,body:'changed'}),false);assert.equal(p.verifyRequest(k.publicKey,s,{...x,route:'/api/other'}),false);});
 test('versions and diagnostics remain bounded',()=>{assert.equal(p.compareVersions('0.2.0','0.1.0'),1);assert.throws(()=>p.compareVersions('dev','0.1.0'));assert.deepEqual(sanitize({event:'test',body:'private',Authorization:'secret',code:'SAFE'}),{event:'test',code:'SAFE'});});

@@ -1,14 +1,27 @@
-const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog}=require('electron');
-const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto'),{spawn}=require('node:child_process');
+const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell}=require('electron');
+const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto');
 const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/protocol.cjs');
 const {Logger}=require('../shared/logging.cjs');
 const {Updates}=require('./maintenance.cjs');
+const {ProtectedState}=require('./state.cjs');
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let logger,win;
-if(!app.requestSingleInstanceLock()){app.quit();}else{
+const selfCheckIndex=process.argv.indexOf('--self-check');
+if(selfCheckIndex>=0){
+ app.whenReady().then(()=>{
+  const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable()};
+  const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
+  result.uiFiles=['index.html','app.js','maintenance.js','styles.css'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
+  const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
+  try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
+  finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
+  result.ok=result.protectionRoundtrip&&result.uiFiles&&result.protectedRecovery;fs.writeFileSync(process.argv[selfCheckIndex+1],JSON.stringify(result));app.exit(result.ok?0:1);
+ }).catch(()=>app.exit(1));
+}else if(!app.requestSingleInstanceLock()){app.quit();}else{
 app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
 app.whenReady().then(()=>{
  const userDir=app.getPath('userData');logger=new Logger(path.join(userDir,'logs'));
+ const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false;
  const configFile=path.join(userDir,'connection.json'),keyFile=path.join(userDir,'device-identity.bin');
  let config={serverUrl:'https://console.eduplinkaudio.com',paired:false};
  try{config=JSON.parse(fs.readFileSync(configFile,'utf8'));}catch{}
@@ -19,7 +32,7 @@ app.whenReady().then(()=>{
  const id=deviceId(identity.publicKey);
  const updates=new Updates({version:VERSION,publicKey:fs.readFileSync(path.join(__dirname,'../assets/update-public.pem'),'utf8'),dir:path.join(userDir,'updates'),logger});
  function validateBase(value){const u=new URL(value);if(u.username||u.password||u.search||u.hash||u.pathname!=='/'|| !(u.protocol==='https:'||(process.env.EDUP_DEV==='1'&&u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname))))throw Error('HTTPS_SERVER_REQUIRED');return u.origin;}
- const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id});
+ const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
   const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css'};
@@ -50,26 +63,32 @@ app.whenReady().then(()=>{
    return data;
   }catch(e){logger.write('api_failed',{route,code:e.name||'REQUEST_FAILED'});throw e;}
  }
- ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
+ ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(installing&&body!==undefined)throw Error('UPDATE_INSTALLING');if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
  ipcMain.handle('edup:maintenance',async(event,action,arg)=>{
   checkSender(event);
+  if(installing)throw Error('UPDATE_INSTALLING');
   if(action==='settings')return settings();
+  if(action==='read-cache')return protectedState.readCache();
+  if(action==='write-cache')return protectedState.writeCache(arg);
   if(action==='configure'){const base=validateBase(arg?.serverUrl);if(base!==config.serverUrl){config={serverUrl:base,paired:false};saveConfig();}return settings();}
   if(action==='pair'){
+   if(pairing)throw Error('PAIR_IN_PROGRESS');pairing=true;
+   try{
    if(!config.serverUrl||typeof arg?.code!=='string')throw Error('PAIR_ARGUMENT');
    const code=arg.code.trim(),publicKey=identity.publicKey,signature=crypto.sign(null,Buffer.from(pairMessage(code,publicKey)),identity.privateKey).toString('base64');
    const r=await fetch(new URL('/api/pair',config.serverUrl),{method:'POST',redirect:'error',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json'},body:JSON.stringify({code,publicKey,signature})});
    const data=await r.json();if(!r.ok)throw Error(data.code||'PAIR_FAILED');if(data.deviceId!==id)throw Error('PAIR_IDENTITY_MISMATCH');
    config.paired=true;saveConfig();logger.write('device_paired',{deviceId:id});return settings();
+   }finally{pairing=false;}
   }
   if(action==='update-status')return updates.state;
   if(action==='check-update')return updates.check();
   if(action==='download-update')return updates.download();
   if(action==='install-update'){
+   if(pairing)throw Error('PAIR_IN_PROGRESS');
    if(!app.isPackaged)throw Error('INSTALL_REQUIRES_PACKAGED_APP');
    const file=updates.verifiedInstaller();
-   const child=spawn(file,[],{detached:true,stdio:'ignore',windowsHide:true,shell:false});
-   await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});child.unref();logger.write('update_installer_started');app.quit();return {state:'installing'};
+   installing=true;try{const backup=protectedState.backup(updates.manifest);logger.write('upgrade_backup',{count:backup.files});const error=await shell.openPath(file);if(error)throw Error('INSTALL_DISPATCH_FAILED');logger.write('update_installer_started');app.quit();return {state:'installing'};}catch(e){installing=false;try{protectedState.cancelUpgrade();}catch{}throw e;}
   }
   if(action==='diagnostics'){
    const result=await dialog.showSaveDialog(win,{title:'导出诊断包（不含商品数据或密钥）',defaultPath:'EDUPLINK-diagnostics-'+new Date().toISOString().slice(0,10)+'.json',filters:[{name:'JSON',extensions:['json']}]});
@@ -80,6 +99,7 @@ app.whenReady().then(()=>{
   }
   throw Error('IPC_ACTION_INVALID');
  });
+ win.webContents.once('did-finish-load',()=>{try{protectedState.confirmUi();}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
  win.loadURL('edup://console/');logger.write('client_started',{version:VERSION});
  const interval=setInterval(()=>updates.check(),6*60*60*1000);interval.unref();setTimeout(()=>updates.check(),10000).unref();
 }).catch(e=>{logger?.write('startup_failed',{code:e.message});dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});

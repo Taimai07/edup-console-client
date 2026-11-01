@@ -13,7 +13,7 @@ export async function renderMaintenance(view,{api,reload}){
  button('连接诊断',async()=>{const r=await api('health');return '连接成功 · 后台 '+r.version+' · API '+r.apiVersion+' · 时间 '+r.serverTime;});
  box.append(server,code,actions,result);
  try{const s=await call('settings');server.value=s.serverUrl;box.append(el('p','客户端 '+s.version+' · 设备 '+s.deviceId+' · '+(s.paired?'已配对':'尚未配对'),'muted'));}catch(e){result.textContent=e.message;}
- const update=card('软件更新','从公开发布页获取更新，校验发布签名和文件哈希后下载。后台组件独立更新，接口版本不兼容时提示升级。');const buttons=el('div',undefined,'toolbar'),state=el('div',undefined,'result');
+ const update=card('软件更新','从公开发布页获取更新，校验签名和文件后下载。覆盖安装保留配对与设置；应用内安装前生成加密恢复副本。安装后重新打开软件核验，失败不会自动恢复或重新安装。');const buttons=el('div',undefined,'toolbar'),state=el('div',undefined,'result');
  const names={idle:'尚未检查',checking:'正在检查',available:'有可用更新',current:'当前已是最新版本',not_published:'尚无已签名的正式更新',check_failed:'更新检查暂不可用',downloading:'正在下载',ready:'下载已校验，可以安装',download_failed:'下载未完成，请稍后重试'};
  const show=s=>{state.textContent=(names[s.state]||s.state)+(s.version?' · '+s.version:'')+(s.notes?'\n'+s.notes:'')+(s.code?'\n错误编号：'+s.code:'');};
  for(const [label,action] of [['检查更新','check-update'],['下载更新','download-update'],['安装更新并退出','install-update']]){const b=el('button',label);b.onclick=async()=>{b.disabled=true;try{show(await call(action));}catch(e){state.textContent=e.message;}finally{b.disabled=false;}};buttons.append(b);}
