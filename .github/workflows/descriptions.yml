@@ -1,0 +1,29 @@
+name: Personal-use descriptions
+on:
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - RELEASE-NOTES.md
+      - .github/workflows/descriptions.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  descriptions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Keep existing release descriptions brief
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
+          foreach ($tag in @('v0.2.0','v0.2.1')) {
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/tags/$tag" -Headers $headers
+            $body = @{ name = "自用版本 $tag"; body = '个人自用版本，仅供本人及家庭内部使用。' } | ConvertTo-Json -Compress
+            $null = Invoke-RestMethod -Method Patch -Uri "https://api.github.com/repos/$env:REPO/releases/$($release.id)" -Headers $headers -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($body))
+            Write-Host "Description updated: $tag"
+          }
