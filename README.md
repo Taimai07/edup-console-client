@@ -1,3 +1,41 @@
 # EDUPLINK Console Client
 
-Windows client for a private, paired-device operations backend. Client source and build configuration are being prepared. This repository does not contain API credentials, device registries or business data.
+Windows桌面客户端，用于连接自有VPS运营后台。商品、经营报表、云仓任务入口和分析评语均由后台接口提供；仓库不包含卖家API凭证、设备白名单、后台执行器或经营数据。
+
+## 使用
+
+从本仓库Releases获取Windows安装程序。安装后在“同步与维护”配置服务地址，输入管理员提供的10分钟一次性配对码。每台电脑使用不同密钥，VPS最多登记两台有效设备；无需账号密码登录。私钥使用Windows DPAPI保护，不随代码发布。
+
+客户端含离线缓存、连接诊断、日志导出、更新检查/下载和用户触发安装。更新清单必须通过内置Ed25519公钥验证，下载文件再校验SHA256；未知签名或降级不安装。VPS需要单独部署，安装客户端不代表已经取得后台访问权限。
+
+## 当前版本
+
+0.2.0仍是预览版：接口、设备验证、日志与更新基础功能可测试。业务页面当前显示历史快照，商品操作和云仓提交只保存草稿，尚未接通真实店铺执行器。广告API未接通时不显示虚构花费。窗口中的数据时间与状态为准。
+
+Windows安装包当前未配置商业Authenticode签名，首次安装可能提示未知发布者。发布清单的Ed25519签名用于应用内更新校验，不等同Windows代码签名证书。自动安装升级的真实跨版本测试仍须完成。
+
+## 开发
+
+需要Node.js 24或以上。
+
+```text
+npm ci --ignore-scripts
+npm run prepare-assets
+npm test
+npm run desktop
+npm run build:win
+```
+
+Electron 45在首次开发启动时可能通过官方安装器下载运行时。CI构建使用官方Electron分发。只启动本客户端，不应模拟操作其他软件窗口。
+
+## 维护
+
+“同步与维护”可检查连接、查看客户端/后台/API版本、导出诊断包与检查更新。诊断包不包含缓存商品数据、原始请求正文、私钥或配对码。日志按大小滚动保留；没有自动发送遥测。
+
+VPS可分别撤销设备、备份SQLite白名单/审计账本、更新后台版本和回滚代码。客户端与服务端按API版本兼容，后台内部变化通常不需要重装客户端；界面或桌面功能变化通过客户端发布。
+
+## 发布
+
+main分支构建Windows NSIS安装程序并上传构建产物。版本号首次发布创建对应GitHub Release；已存在的版本不会覆盖，更新需增加版本号。发布后还需由维护者在私有环境签署更新清单；只在GitHub放一个EXE不会自动成为可信更新。
+
+构建流程不需要卖家API密钥或设备密钥。发行签名私钥保留在私有环境，不提交仓库。公开源码不代表开放VPS管理入口。

@@ -1,0 +1,62 @@
+{
+  "name": "edup-console-client",
+  "productName": "EDUPLINK运营工作台",
+  "version": "0.2.0",
+  "description": "A paired Windows client for a privately hosted operations service",
+  "author": "EDUPLINK",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "test": "node test/client.test.cjs",
+    "prepare-assets": "node scripts/prepare-assets.cjs",
+    "desktop": "electron .",
+    "build:win": "electron-builder --win nsis --publish never"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.eduplink.operations.console",
+    "asar": true,
+    "files": [
+      "desktop/**",
+      "ui/**",
+      "shared/**",
+      "assets/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "publish": null,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": true,
+      "artifactName": "EDUPLINK-Setup-${version}.exe",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

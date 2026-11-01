@@ -1,0 +1,38 @@
+name: Windows client
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run prepare-assets
+      - run: npm test
+      - run: npm run build:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+      - name: Publish new version without replacing existing releases
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $releaseVersion = node -p "require('./package.json').version"
+          gh release view "v$releaseVersion" *> $null
+          if ($LASTEXITCODE -eq 0) { Write-Host 'Version exists; release assets are immutable.'; exit 0 }
+          Get-FileHash "dist/EDUPLINK-Setup-$releaseVersion.exe" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  EDUPLINK-Setup-$releaseVersion.exe" } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
+          gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "EDUPLINK $releaseVersion preview" --notes-file RELEASE-NOTES.md --prerelease
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

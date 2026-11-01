@@ -1,0 +1,8 @@
+node_modules/
+dist/
+runtime/
+*.bin
+*.env
+*.sqlite*
+assets/icon.png
+build/icon.ico
