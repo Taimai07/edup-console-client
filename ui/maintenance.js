@@ -19,5 +19,5 @@ export async function renderMaintenance(view,{api,reload}){
  for(const [label,action] of [['检查更新','check-update'],['下载更新','download-update'],['安装更新并退出','install-update']]){const b=el('button',label);b.onclick=async()=>{b.disabled=true;try{show(await call(action));}catch(e){state.textContent=e.message;}finally{b.disabled=false;}};buttons.append(b);}
  update.append(buttons,state);view.append(update);try{show(await call('update-status'));}catch{}
  const diagnostics=card('日志与诊断包','滚动保留客户端与服务端运行日志。导出包包含版本、错误编号和请求编号，不包含商品明细、配对码或API密钥。');const exportButton=el('button','导出诊断包');exportButton.onclick=async()=>{try{const r=await call('diagnostics');result.textContent=r.saved?'诊断包已保存':'已取消导出';}catch(e){result.textContent=e.message;}};diagnostics.append(exportButton);view.append(diagnostics);
- view.append(card('数据同步','商品与库存拟按5—15分钟刷新；财务及广告按数据可用性每日更新并回补。当前仍为历史快照，定时采集等待接入。'));
+ view.append(card('数据同步','经营数据和商品资料由服务器定期更新，页面每分钟读取已有结果。访问与转化报表等待平台生成，广告尚未接通。每项数据的实际时间以报表标注为准。'));
 }

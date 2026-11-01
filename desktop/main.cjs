@@ -4,6 +4,7 @@ const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/
 const {Logger}=require('../shared/logging.cjs');
 const {Updates}=require('./maintenance.cjs');
 const {ProtectedState}=require('./state.cjs');
+const {extractCodes,fileText}=require('./import.cjs');
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let logger,win;
 const selfCheckIndex=process.argv.indexOf('--self-check');
@@ -11,7 +12,7 @@ if(selfCheckIndex>=0){
  app.whenReady().then(()=>{
   const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable()};
   const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
-  result.uiFiles=['index.html','app.js','maintenance.js','styles.css'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
+  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
   const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
   try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
   finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
@@ -35,7 +36,7 @@ app.whenReady().then(()=>{
  const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
-  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css'};
+  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css'};
   if(u.host!=='console'||!files[u.pathname])return new Response('Not found',{status:404});
   const type=u.pathname.endsWith('.js')?'text/javascript':u.pathname.endsWith('.css')?'text/css':'text/html';
   return new Response(fs.readFileSync(path.join(__dirname,'../ui',files[u.pathname])),{headers:{'Content-Type':type+'; charset=utf-8','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:"}});
@@ -68,6 +69,11 @@ app.whenReady().then(()=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
   if(action==='settings')return settings();
+  if(action==='extract-codes')return extractCodes(arg?.text);
+  if(action==='extract-document'){
+   const r=await dialog.showOpenDialog(win,{title:'选择含商品编码的文件',properties:['openFile'],filters:[{name:'商品编码文档',extensions:['txt','csv','tsv','docx','xlsx']}]});
+   if(r.canceled)return {canceled:true};return {...extractCodes(fileText(r.filePaths[0])),filename:path.basename(r.filePaths[0])};
+  }
   if(action==='read-cache')return protectedState.readCache();
   if(action==='write-cache')return protectedState.writeCache(arg);
   if(action==='configure'){const base=validateBase(arg?.serverUrl);if(base!==config.serverUrl){config={serverUrl:base,paired:false};saveConfig();}return settings();}

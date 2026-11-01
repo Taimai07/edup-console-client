@@ -40,5 +40,5 @@ jobs:
           gh release view "v$releaseVersion" *> $null
           if ($LASTEXITCODE -eq 0) { Write-Host 'Version exists; release assets are immutable.'; exit 0 }
           Get-FileHash "dist/EDUPLINK-Setup-$releaseVersion.exe" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  EDUPLINK-Setup-$releaseVersion.exe" } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
-          gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "EDUPLINK $releaseVersion preview" --notes-file RELEASE-NOTES.md --prerelease
+          gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "自用版本 v$releaseVersion" --notes-file RELEASE-NOTES.md --prerelease
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
