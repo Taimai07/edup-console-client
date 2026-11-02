@@ -1,4 +1,6 @@
-const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu}=require('electron');
+const {buildZiniaoRoute}=require('./ziniao.cjs');
+const {Network}=require('./network.cjs');
+const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu,session,net}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto');
 const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/protocol.cjs');
 const {Logger}=require('../shared/logging.cjs');
@@ -15,7 +17,7 @@ if(selfCheckIndex>=0){
  app.whenReady().then(()=>{
   const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable()};
   const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
-  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
+  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js','network-settings.js','workspace-v2.js','workspace-v2.css','browser-settings.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
   const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
   try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
   finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
@@ -23,7 +25,7 @@ if(selfCheckIndex>=0){
  }).catch(()=>app.exit(1));
 }else if(!app.requestSingleInstanceLock()){app.quit();}else{
 app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
-app.whenReady().then(()=>{
+app.whenReady().then(async()=>{
  const userDir=app.getPath('userData');logger=new Logger(path.join(userDir,'logs'));
  const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false;
  const configFile=path.join(userDir,'connection.json'),keyFile=path.join(userDir,'device-identity.bin');
@@ -34,12 +36,13 @@ app.whenReady().then(()=>{
  if(fs.existsSync(keyFile)){try{identity=JSON.parse(safeStorage.decryptString(fs.readFileSync(keyFile)));}catch{throw Error('DEVICE_KEY_UNREADABLE');}}
  else{const pair=crypto.generateKeyPairSync('ed25519');identity={publicKey:pair.publicKey.export({type:'spki',format:'pem'}),privateKey:pair.privateKey.export({type:'pkcs8',format:'pem'})};saveIdentity();}
  const id=deviceId(identity.publicKey);
- const updates=new Updates({version:VERSION,publicKey:fs.readFileSync(path.join(__dirname,'../assets/update-public.pem'),'utf8'),dir:path.join(userDir,'updates'),logger});
+ const network=new Network(session.fromPartition('persist:edup-network'),{settings:config.proxy||{mode:'system'},logger,requester:options=>net.request(options)});await network.init();
+ const updates=new Updates({fetcher:network.fetch,version:VERSION,publicKey:fs.readFileSync(path.join(__dirname,'../assets/update-public.pem'),'utf8'),dir:path.join(userDir,'updates'),logger});
  function validateBase(value){const u=new URL(value);if(u.username||u.password||u.search||u.hash||u.pathname!=='/'|| !(u.protocol==='https:'||(process.env.EDUP_DEV==='1'&&u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname))))throw Error('HTTPS_SERVER_REQUIRED');return u.origin;}
- const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery});
+ const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery,proxy:network.settings});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
-  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
+  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/browser-settings.js':'browser-settings.js','/workspace-v2.css':'workspace-v2.css','/workspace-v2.js':'workspace-v2.js','/network-settings.js':'network-settings.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
   if(u.host!=='console'||!files[u.pathname])return new Response('Not found',{status:404});
   const type=u.pathname.endsWith('.js')?'text/javascript':u.pathname.endsWith('.css')?'text/css':'text/html';
   return new Response(fs.readFileSync(path.join(__dirname,'../ui',files[u.pathname])),{headers:{'Content-Type':type+'; charset=utf-8','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:"}});
@@ -53,21 +56,21 @@ app.whenReady().then(()=>{
  win.webContents.on('render-process-gone',(_e,details)=>logger.write('renderer_gone',{code:details.reason}));
  win.webContents.on('unresponsive',()=>logger.write('window_unresponsive'));
  function checkSender(event){if(event.sender!==win.webContents||event.senderFrame!==win.webContents.mainFrame||!trustedUrl(event.senderFrame.url))throw Error('IPC_SOURCE_INVALID');}
- async function request(route,body){
+ async function request(route,body){return network.run(async()=>{
   if(!config.serverUrl)throw Error('请先在同步与维护中配置远程地址');
   const method=body===undefined?'GET':'POST',raw=body===undefined?'':JSON.stringify(body),time=String(Date.now()),nonce=crypto.randomBytes(16).toString('hex');
   const url=new URL('/api/'+route,validateBase(config.serverUrl));
   const signature=signRequest(identity.privateKey,{method,route:url.pathname,body:raw,time,nonce,version:VERSION});
   const start=Date.now();
   try{
-   const r=await fetch(url,{method,redirect:'error',signal:AbortSignal.timeout(20000),headers:{'X-Edup-Device':id,'X-Edup-Time':time,'X-Edup-Nonce':nonce,'X-Edup-Signature':signature,'X-Edup-Version':VERSION,...(body===undefined?{}:{'Content-Type':'application/json','Idempotency-Key':nonce})},body:body===undefined?undefined:raw});
+   const r=await network.fetch(url,{method,redirect:'error',signal:AbortSignal.timeout(20000),headers:{'X-Edup-Device':id,'X-Edup-Time':time,'X-Edup-Nonce':nonce,'X-Edup-Signature':signature,'X-Edup-Version':VERSION,...(body===undefined?{}:{'Content-Type':'application/json','Idempotency-Key':nonce})},body:body===undefined?undefined:raw});
    const text=await r.text();if(text.length>4*1024*1024)throw Error('RESPONSE_TOO_LARGE');const data=JSON.parse(text);
    logger.write('api_result',{route,status:r.status,requestId:data.requestId||'',durationMs:Date.now()-start});
    if(!r.ok)throw Error((data.code||'HTTP_'+r.status)+(data.requestId?' / '+data.requestId:''));
    if(route==='health'&&data.apiVersion!==API_VERSION)throw Error('API_INCOMPATIBLE');
    return data;
   }catch(e){logger.writeError('api_failed',e,{route,durationMs:Date.now()-start});throw e;}
- }
+ });}
  ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(installing&&body!==undefined)throw Error('UPDATE_INSTALLING');if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
  ipcMain.handle('edup:ai',async(event,op,args)=>{checkSender(event);if(installing)throw Error('UPDATE_INSTALLING');return request('ai',validateAIRequest(op,args));});
  async function installUpdate(){
@@ -81,6 +84,28 @@ app.whenReady().then(()=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
   if(action==='settings')return settings();
+  if(action==='ziniao-settings')return {binding:config.ziniao?.[arg?.site]||null};
+  if(action==='ziniao-save-binding'){
+   const b=arg?.binding;if(!b||typeof b.name!=='string'||!b.name.trim()||b.name.length>80||b.confirmed!==true)throw Error('STORE_BINDING_NOT_VERIFIED');
+   const binding={name:b.name,account:'EDUPLINK / A',site:arg.site,storeId:b.storeId,userId:b.userId,version:b.version,verified:true,loggedInUserId:b.userId,verification:'user_confirmed'};
+   buildZiniaoRoute({account:'EDUPLINK / A',site:arg.site,sku:'binding-check',binding});config.ziniao={...config.ziniao,[arg.site]:binding};saveConfig();return {saved:true};
+  }
+  if(action==='ziniao-open'){
+   const r=buildZiniaoRoute({account:'EDUPLINK / A',site:arg?.site,sku:arg?.sku,binding:config.ziniao?.[arg?.site]});
+   try{await shell.openExternal(r.protocolUrl);}catch{throw Error('ZINIAO_OPEN_FAILED');}logger.write('ziniao_open_requested',{state:'user_click'});return {requested:true};
+  }
+
+  if(action==='set-proxy'){
+   if(pairing||updates.state.state==='downloading'||updateController.pending)throw Error('NETWORK_BUSY');
+   await network.apply(arg);config.proxy=network.settings;saveConfig();return {settings:network.settings};
+  }
+  if(action==='test-proxy'){
+   const targets={server:'https://console.eduplinkaudio.com/updates/stable.json',github:'https://github.com/Taimai07/edup-console-client/releases'};
+   if(!targets[arg?.target])throw Error('PROXY_TEST_TARGET_INVALID');
+   const temp=new Network(session.fromPartition('edup-proxy-test-'+crypto.randomUUID()),{settings:arg.settings,requester:options=>net.request(options)});
+   try{await temp.init();return await temp.diagnose(targets[arg.target]);}finally{await temp.session.closeAllConnections();}
+  }
+
   if(action==='extract-codes')return extractCodes(arg?.text);
   if(action==='extract-document'){
    const r=await dialog.showOpenDialog(win,{title:'选择含商品编码的文件',properties:['openFile'],filters:[{name:'商品编码文档',extensions:['txt','csv','tsv','docx','xlsx']}]});
@@ -88,14 +113,14 @@ app.whenReady().then(()=>{
   }
   if(action==='read-cache')return protectedState.readCache();
   if(action==='write-cache')return protectedState.writeCache(arg);
-  if(action==='configure'){const base=validateBase(arg?.serverUrl);if(base!==config.serverUrl){config={serverUrl:base,paired:false};saveConfig();}return settings();}
+  if(action==='configure'){const base=validateBase(arg?.serverUrl);if(base!==config.serverUrl){config={...config,serverUrl:base,paired:false};saveConfig();}return settings();}
   if(action==='pair'){
    if(pairing)throw Error('PAIR_IN_PROGRESS');pairing=true;
    try{
    if(!config.serverUrl||typeof arg?.code!=='string')throw Error('PAIR_ARGUMENT');
    const code=arg.code.trim(),publicKey=identity.publicKey,signature=crypto.sign(null,Buffer.from(pairMessage(code,publicKey)),identity.privateKey).toString('base64');
-   const r=await fetch(new URL('/api/pair',config.serverUrl),{method:'POST',redirect:'error',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json'},body:JSON.stringify({code,publicKey,signature})});
-   const data=await r.json();if(!r.ok)throw Error(data.code||'PAIR_FAILED');if(data.deviceId!==id)throw Error('PAIR_IDENTITY_MISMATCH');
+   await network.run(async()=>{const r=await network.fetch(new URL('/api/pair',config.serverUrl),{method:'POST',redirect:'error',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json'},body:JSON.stringify({code,publicKey,signature})});
+   const data=await r.json();if(!r.ok)throw Error(data.code||'PAIR_FAILED');if(data.deviceId!==id)throw Error('PAIR_IDENTITY_MISMATCH');});
    config.paired=true;saveConfig();logger.write('device_paired',{deviceId:id});return settings();
    }finally{pairing=false;}
   }

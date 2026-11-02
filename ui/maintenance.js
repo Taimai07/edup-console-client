@@ -1,4 +1,5 @@
 import {message as feedback,friendlyError,notify} from './notices.js';
+import {renderNetworkSettings} from './network-settings.js';
 const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
 function card(title,text){const c=el('article',undefined,'card');c.append(el('h2',title),el('p',text,'muted'));return c;}
 export async function renderMaintenance(view,{api,reload}){
@@ -14,6 +15,7 @@ export async function renderMaintenance(view,{api,reload}){
  button('连接诊断',async()=>{const r=await api('health');return '连接成功 · 后台 '+r.version+' · API '+r.apiVersion+' · 时间 '+r.serverTime;});
  box.append(server,code,actions,result);
  try{const s=await call('settings');server.value=s.serverUrl;box.append(el('p','客户端 '+s.version+' · '+(s.paired?'这台电脑已配对':'这台电脑尚未配对'),'muted'));}catch(e){feedback(result,friendlyError(e));}
+ await renderNetworkSettings(view);
  const update=card('软件更新',''),buttons=el('div',undefined,'toolbar'),state=el('div',undefined,'result');
  const names={idle:'',checking:'正在检查更新…',available:'有可用更新',current:'当前已是最新版本',not_published:'暂未发布正式更新',check_failed:'检查失败，请稍后重试',downloading:'正在下载更新…',ready:'下载已校验，正在准备安装…',download_failed:'下载失败，请稍后重试',cancelled:'已取消更新',installing:'正在启动安装…'};
  const show=s=>{if(['check_failed','download_failed','update_failed'].includes(s.state)){feedback(state,{level:'error',title:'更新暂未完成',message:'可以继续使用当前版本，稍后再检查更新。',code:s.code||''});return;}state.textContent=(names[s.state]??'正在处理更新')+(s.version&&s.state==='current'?' · '+s.version:'');};

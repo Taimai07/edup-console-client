@@ -1,3 +1,4 @@
+import {renderWorkspace} from './workspace-v2.js';
 import {productEditor,gigaQueries} from './operations.js';
 import {renderMaintenance} from './maintenance.js';
 import {mountAI} from './ai-host.js';
@@ -18,14 +19,14 @@ function marketFilter(parent,allowAll=true){const select=el('select');const site
 function render(){
  if(disposeAI){disposeAI();disposeAI=null;}
  document.querySelector('#title').textContent=detail?names[detail]+'趋势':tabs[current];[...document.querySelector('#nav').children].forEach((b,i)=>b.className=i===current?'active':'');
- const v=document.querySelector('#view');v.replaceChildren();
+ const v=document.querySelector('#view');v.replaceChildren();v.classList.remove('workspace-v2');
  syncStatus(document.querySelector('#notice'),{data,offline,cacheWarning,error:loadError,onSettings:()=>{current=6;detail=null;render();},onRetry:load});
  if(current===6){renderMaintenance(v,{api,reload:load});return;}if(current===5){disposeAI=mountAI(v);return;}if(!data)return;
- const toolbar=el('div',undefined,'toolbar');if(current!==3)marketFilter(toolbar);else toolbar.append(el('span','上架任务目标：美国站','tag'));v.append(toolbar);
+ const toolbar=el('div',undefined,'toolbar');if(![1,2,3].includes(current))marketFilter(toolbar);else if(current===3)toolbar.append(el('span','上架任务目标：美国站','tag'));v.append(toolbar);
  if(detail){const back=el('button','返回经营总览');back.onclick=()=>{detail=null;render();};toolbar.append(back);renderDetail(v,detail);return;}
  if(current===0)overview(v);
- if(current===1)products(v);
- if(current===2)reports(v);
+ if(current===1)renderWorkspace(v,{data,mode:'products',offline,redraw:render,navigate:mode=>{current=mode==='products'?1:2;render();}});
+ if(current===2)renderWorkspace(v,{data,mode:'reports',offline,redraw:render,navigate:mode=>{current=mode==='products'?1:2;render();}});
  if(current===3)giga(v);
  if(current===4){v.append(card('广告花费与投放效果','广告数据尚未接通，当前不能统计实际花费、ACOS或ROAS。接通后按报表日期展示，不能按0元处理。'));}
 }

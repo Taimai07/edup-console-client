@@ -1,0 +1,12 @@
+import {message,friendlyError} from './notices.js';
+const el=(t,text)=>{const e=document.createElement(t);if(text!==undefined)e.textContent=text;return e;};
+export async function renderNetworkSettings(parent){const box=el('article');box.className='card';box.append(el('h2','网络代理'),el('p','后台连接、AI和更新下载共用此设置。规则分流由你的代理软件处理；每台电脑单独保存。'));const mode=el('select'),type=el('select'),host=el('input'),port=el('input'),fields=el('div'),result=el('div'),tools=el('div');result.className='result';tools.className='toolbar';fields.className='proxy-fields';
+for(const [value,label]of [['system','跟随系统代理'],['direct','不使用代理'],['manual','手动设置代理']]){const o=el('option',label);o.value=value;mode.append(o);}
+for(const [value,label]of [['http','HTTP / 混合端口'],['socks5','SOCKS5端口']]){const o=el('option',label);o.value=value;type.append(o);}
+mode.setAttribute('aria-label','代理模式');type.setAttribute('aria-label','代理类型');host.value='127.0.0.1';host.placeholder='代理地址，例如127.0.0.1';host.setAttribute('aria-label','代理地址');port.type='number';port.min='1';port.max='65535';port.placeholder='代理端口';port.setAttribute('aria-label','代理端口');fields.append(type,host,port);const toggle=()=>fields.hidden=mode.value!=='manual';mode.onchange=toggle;
+const settings=()=>mode.value==='manual'?{mode:'manual',type:type.value,host:host.value.trim(),port:Number(port.value)}:{mode:mode.value};
+function action(label,fn){const b=el('button',label);b.onclick=async()=>{const all=[...tools.querySelectorAll('button')];all.forEach(x=>x.disabled=true);try{await fn();}catch(e){message(result,friendlyError(e));}finally{all.forEach(x=>x.disabled=false);}};tools.append(b);}
+action('保存代理设置',async()=>{await window.edup.maintenance('set-proxy',settings());message(result,{level:'success',title:'网络设置已保存',message:'后续连接和更新下载使用新的设置。'});});
+for(const [target,label]of [['server','测试后台连接'],['github','测试GitHub连接']])action(label,async()=>{message(result,{title:'正在测试',message:'使用当前表单设置测试，不改写已保存配置。'});const r=await window.edup.maintenance('test-proxy',{target,settings:settings()});message(result,{level:r.ok?'success':'error',title:r.ok?'连接成功':'连接未成功',message:'解析路径：'+(r.route==='DIRECT'?'直连（系统未为这个地址指定代理）':r.route)+'；响应 '+r.status+'，耗时 '+r.durationMs+'ms。'});});
+box.append(mode,fields,tools,result);parent.append(box);try{const r=await window.edup.maintenance('settings'),p=r.proxy||{mode:'system'};mode.value=p.mode;if(p.mode==='manual'){type.value=p.type;host.value=p.host;port.value=p.port;}toggle();}catch(e){message(result,friendlyError(e));}
+}
