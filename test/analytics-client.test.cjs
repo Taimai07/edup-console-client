@@ -8,7 +8,7 @@ test('USD aggregation preserves missing FX, negative margin and combines the sam
  assert.equal(sumUSD({EUR:10,USD:5,GBP:10},fx).amount,30);assert.equal(sumUSD({EUR:10,ABC:1},fx).amount,null);
  const interval=today()+'T00:00:00+08:00--'+today()+'T01:00:00+08:00';
  const state=c=>({state:'ok',hourly:[{interval,unitCount:3,orderCount:1,totalSales:{currencyCode:c,amount:10}}],m6Estimate:{currency:c,amount:-2,units:3,hourly:[{interval,amount:-2}]}});
- const d={fx,operating:{day:today(),sites:{DE:state('EUR'),US:state('USD'),NL:{state:'ok',hourly:[]}}}};
+ const d={fx,operating:{day:today(),sites:{DE:state('EUR'),US:state('USD'),NL:{state:'ok',hourly:[]}},profit:{day:today(),views:{ALL:{profitUSD:-4.4,coveredUnits:6,totalUnits:6,hourly:[{date:interval.split('--')[0],currency:'USD',value:-4.4}]}}}}};
  assert.equal(totals(d,'ALL').salesUSD,22);assert.equal(totals(d,'ALL').profitUSD,-4.4);assert.equal(totals(d,'ALL').units,6);
  assert.deepEqual(salesSeries(d,'ALL','sales','today').map(x=>x.value),[22]);assert.deepEqual(profitSeries(d,'ALL').map(x=>x.value),[-4.4]);
  for(const values of [[0],[.002,.003],[-20,-1],[1,10000]]){const a=axisScale(values);assert.ok(a.min<=Math.min(...values)&&a.max>=Math.max(...values)&&a.max>a.min&&a.step>0);}

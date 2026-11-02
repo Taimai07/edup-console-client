@@ -10,3 +10,5 @@ test('release signature and downloaded file must match',()=>{const k=crypto.gene
 require('./update-flow.test.cjs');
 
 require('./ai-client.test.cjs');
+require('./startup-update.test.cjs');
+require('./logging-errors.test.cjs');

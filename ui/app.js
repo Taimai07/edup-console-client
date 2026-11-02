@@ -1,24 +1,26 @@
+import {productEditor,gigaQueries} from './operations.js';
 import {renderMaintenance} from './maintenance.js';
 import {mountAI} from './ai-host.js';
+import {syncStatus,notify,message as feedback,friendlyError} from './notices.js';
 import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './analytics.js';
-const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','同步与维护','运营 AI'];
+const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','运营 AI','同步与维护'];
 let disposeAI=null;
-let data=null,current=0,site='ALL',offline=false,cacheWarning='',detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set();
+let data=null,current=0,site='ALL',offline=false,cacheWarning='',loadError=null,detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set();
 const api=async(route,body)=>{if(window.edup)return window.edup.request(route,body);const r=await fetch('/api/'+route,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()}:{},body:body?JSON.stringify(body):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;};
 tabs.forEach((t,i)=>{const b=el('button',t);b.onclick=()=>{current=i;detail=null;render();};document.querySelector('#nav').append(b);});
 async function load(){
  const desktop=!!window.edup?.maintenance;cacheWarning='';
  if(desktop){try{const old=localStorage.getItem('edup-A-snapshot');if(old){if(!await window.edup.maintenance('read-cache'))await window.edup.maintenance('write-cache',JSON.parse(old));localStorage.removeItem('edup-A-snapshot');}}catch{cacheWarning='旧版缓存迁移未完成。';}}
- try{data=await api('snapshot');offline=false;if(desktop){try{await window.edup.maintenance('write-cache',data);localStorage.removeItem('edup-A-snapshot');}catch{cacheWarning='离线副本保存失败，本次数据仍可查看。';}}else localStorage.setItem('edup-A-snapshot',JSON.stringify(data));}
- catch{try{data=desktop?await window.edup.maintenance('read-cache'):JSON.parse(localStorage.getItem('edup-A-snapshot'));}catch{data=null;}offline=true;}render();
+ try{data=await api('snapshot');offline=false;loadError=null;if(desktop){try{await window.edup.maintenance('write-cache',data);localStorage.removeItem('edup-A-snapshot');}catch{cacheWarning='离线副本保存失败，本次数据仍可查看。';}}else localStorage.setItem('edup-A-snapshot',JSON.stringify(data));}
+ catch(e){loadError=e;try{data=desktop?await window.edup.maintenance('read-cache'):JSON.parse(localStorage.getItem('edup-A-snapshot'));}catch{data=null;}offline=true;}render();
 }
 function marketFilter(parent,allowAll=true){const select=el('select');const sites=[...new Set([...Object.keys(data.operating?.sites||{}),...Object.keys(data.operating?.traffic||{}),...data.products.map(p=>p.site)])].sort();for(const s of allowAll?['ALL',...sites]:sites){const o=el('option',s==='ALL'?'全部站点':(siteNames[s]||s)+' · '+s);o.value=s;select.append(o);}select.value=site;select.onchange=()=>{site=select.value;render();};parent.append(select);}
 function render(){
  if(disposeAI){disposeAI();disposeAI=null;}
  document.querySelector('#title').textContent=detail?names[detail]+'趋势':tabs[current];[...document.querySelector('#nav').children].forEach((b,i)=>b.className=i===current?'active':'');
  const v=document.querySelector('#view');v.replaceChildren();
- document.querySelector('#notice').textContent=data?(offline?'离线查看 · ':'')+(data.operating?'北京时间 '+data.operating.day+' · 上次同步 '+data.operating.generatedAt+' · 平台数据有延迟。':'当前仅有历史资料，尚无当日统计。')+' '+cacheWarning:'首次使用请进入“同步与维护”完成电脑配对。';
- if(current===5){renderMaintenance(v,{api,reload:load});return;}if(current===6){disposeAI=mountAI(v);return;}if(!data)return;
+ syncStatus(document.querySelector('#notice'),{data,offline,cacheWarning,error:loadError,onSettings:()=>{current=6;detail=null;render();},onRetry:load});
+ if(current===6){renderMaintenance(v,{api,reload:load});return;}if(current===5){disposeAI=mountAI(v);return;}if(!data)return;
  const toolbar=el('div',undefined,'toolbar');if(current!==3)marketFilter(toolbar);else toolbar.append(el('span','上架任务目标：美国站','tag'));v.append(toolbar);
  if(detail){const back=el('button','返回经营总览');back.onclick=()=>{detail=null;render();};toolbar.append(back);renderDetail(v,detail);return;}
  if(current===0)overview(v);
@@ -29,7 +31,7 @@ function render(){
 }
 function overview(v){
  const t=totals(data,site),grid=el('div',undefined,'grid kpis');
- const metrics=[['sales',usdText(t.salesUSD),'北京时间今天零点起；所有已统计站点折算美元'],['units',number(t.units),'按下单商品件数统计'],['profit',usdText(t.profitUSD),'已知成本部分合计，覆盖 '+t.coverage+' / '+(t.units??'—')+' 件；其余商品成本未齐'],['ads','—','尚无同口径当日广告数据'],['sessions','—','访问报表有延迟，点击查看已生成趋势'],['refunds','—','点击查看平台报表退款件数；不等于实物退货']];
+ const metrics=[['sales',usdText(t.salesUSD),'北京时间今天零点起；所有已统计站点折算美元'],['units',number(t.units),'按下单商品件数统计'],['profit',usdText(t.profitUSD),'服务器估算，覆盖 '+t.coverage+' / '+(t.profitUnits??'—')+' 件；点击查看口径'],['ads','—','尚无同口径当日广告数据'],['sessions','—','访问报表有延迟，点击查看已生成趋势'],['refunds','—','点击查看平台报表退款件数；不等于实物退货']];
  for(const [key,value,note]of metrics){const x=card(names[key]);x.classList.add('kpi');x.tabIndex=0;x.setAttribute('role','button');x.append(el('div',value,'metric'),el('p',note,'muted'));x.onclick=()=>{detail=key;span='today';render();};x.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();x.click();}};grid.append(x);}v.append(grid,el('p',fxNote(data),'muted'));if(t.missingRates?.length)v.append(card('汇率待补齐','缺少 '+t.missingRates.join('、')+' 汇率，总销售额暂不显示不完整合计。'));if(t.siteCount!==Object.keys(data.operating?.sites||{}).length)v.append(card('统计范围提示','当前合计仅覆盖成功同步的 '+(t.siteCount||0)+' 个站点，请核对下方同步提示。'));
  const box=card('重点发现与经营建议','结论使用已注明日期的数据，需与当期活动、库存和毛利一起判断。'),row=el('div',undefined,'strategy-row');
  for(const i of strategies(data,site)){const c=el('div',undefined,'strategy');c.append(el('h3',(i.site?(siteNames[i.site]||i.site)+' · ':'')+i.title),el('p',i.body),el('p','依据时间 '+i.asOf,'muted'));row.append(c);}box.append(row);v.append(box);
@@ -39,7 +41,7 @@ function controls(parent,platform=false){const tools=el('div',undefined,'toolbar
 function renderDetail(v,key){
  controls(v,key==='sessions'||key==='refunds');
  if(['sales','units','orders'].includes(key)){const series=salesSeries(data,site,key,span);for(const c of new Set(series.map(x=>x.currency)))v.append(chart(names[key]+' · '+c,series.filter(x=>x.currency===c),{unit:key==='sales'?c:key==='units'?'件':'单',start:from,end:to,note:'北京时间口径；'+(key==='sales'?fxNote(data):'鼠标移动查看时间和值。')}));if(!series.length)v.append(card(names[key],'当前没有该范围的可用数据。'));return;}
- if(key==='profit'){const t=totals(data,site);v.append(card('今日已知成本商品的总毛利估算',usdText(t.profitUSD)+'，覆盖 '+t.coverage+' / '+(t.units??'—')+' 件。按历史单件余额乘今日SKU销量后汇总，并统一折算美元；已计采购及头程，未扣广告、退款、仓储。其他款成本未齐，尚不能得到与全部销售额对应的完整毛利。'));if(span==='today'){v.append(chart('估算总毛利 · USD',profitSeries(data,site),{unit:'USD',start:from,end:to,note:fxNote(data)+' 仅已知成本普通M6；按历史单位余额估算。'}));}else v.append(card('历史毛利曲线暂缺','当前只采集了当日的SKU分时毛利估算；不能据此推算历史整店毛利。'));return;}
+ if(key==='profit'){const t=totals(data,site);v.append(card('今日总毛利估算',usdText(t.profitUSD)+'。'+t.profitNote),card('计算口径',t.profitBasis||'等待服务器生成；不会在客户端假设成本或补算。'));if(t.profitMissing?.length)v.append(table(['站点','SKU','件数','暂未计入的原因'],t.profitMissing.map(x=>[x.site,x.sku,x.units,x.reasons.join('、')])));if(span==='today')v.append(chart('估算总毛利 · USD',profitSeries(data,site),{unit:'USD',start:from,end:to,note:'服务器按订单时间归集；仅显示有足够成本和费用依据的部分。'}));else v.append(card('历史毛利曲线暂缺','新算法按当日订单及费用估算；历史数据需要逐日重新计算，不能用今日成本反推为已实现利润。'));return;}
  if(key==='ads'){v.append(card('暂无广告趋势','等待广告数据接入；不会绘制虚构的0元曲线。'));return;}
  const field=key==='sessions'?'sessions':'refundedUnits';trafficCharts(v,[field]);
 }
@@ -53,7 +55,7 @@ function products(v){
  const rows=el('table'),head=el('tr');['站点 / 商品','ASIN / 销售状态','库存','需要处理的事项','操作'].forEach(x=>head.append(el('th',x)));rows.append(head);
  for(const p of data.products.filter(x=>site==='ALL'||x.site===site)){const tr=el('tr');const status=p.status.includes('BUYABLE')?'可以买到':p.status.length?p.status.join(' / '):'状态待核实';tr.append(el('td',p.site+' / '+p.sku+(p.name?'\n'+p.name:'')),el('td',p.asin+'\n'+status),el('td','可售 '+(p.available??'待核实')+' / 保留 '+(p.reserved??'待核实')));
  const issues=el('td');if(!p.issues.length)issues.append(el('span','本次未返回刊登提示'));for(const i of p.issues){const x=el('details');x.append(el('summary',i.title||i.message||'刊登提示'),el('p',i.why||i.message||'原因待核对'),el('p',i.impact||'影响范围待核对','muted'),el('p',i.next||'请核对卖家后台的原始提示'),el('small','参考编号 '+i.code));issues.append(x);}tr.append(issues);
- const cell=el('td'),b=el('button','管理销售状态');b.onclick=()=>{cell.replaceChildren(el('strong',p.site+' · '+p.sku),el('p','当前版本尚未开通软件内暂停／恢复销售。请先在卖家后台处理，避免误操作。','muted'));for(const label of ['暂停销售（尚未开通）','恢复销售（尚未开通）']){const x=el('button',label);x.disabled=true;cell.append(x);}};cell.append(b);tr.append(cell);rows.append(tr);}
+ const cell=el('td'),edit=el('button','调价／修改文案'),editor=el('div'),b=el('button','管理销售状态');edit.onclick=()=>productEditor(editor,p,{offline});cell.append(edit,editor);b.onclick=()=>{cell.replaceChildren(el('strong',p.site+' · '+p.sku),el('p','当前版本尚未开通软件内暂停／恢复销售。请先在卖家后台处理，避免误操作。','muted'));for(const label of ['暂停销售（尚未开通）','恢复销售（尚未开通）']){const x=el('button',label);x.disabled=true;cell.append(x);}};cell.append(b);tr.append(cell);rows.append(tr);}
  const scroll=el('div',undefined,'scroll');scroll.append(rows);box.append(scroll);if(data.operating?.catalogComplete===false)box.append(el('p','部分站点或分页未同步完整，请查看同步结果。','danger'));v.append(box);
 }
 function reports(v){
@@ -78,7 +80,7 @@ function giga(v){
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
  if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；普通数字、日期和金额不会直接作为编码。');
  for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
- const count=el('p','已选择 '+selected.size+' 个'),submit=el('button','创建上架任务'),status=el('div');submit.disabled=offline;submit.onclick=async()=>{try{if(!selected.size||selected.size>100)throw Error('每批请选择1—100个编码');const r=await api('drafts',{account:data.account,action:'giga_import',site:'US',skus:[...selected]});status.textContent='任务已记录，编号 '+r.id+'。云仓执行器尚未接通，本次没有在亚马逊发布商品。';}catch(e){status.textContent=e.message;}};c.append(count,submit,status);v.append(c);}
- v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；当前版本还不能直接发布商品。扫描件和PDF需先转换为支持的文档格式。'));
+ const count=el('p','已选择 '+selected.size+' 个');c.append(count);gigaQueries(c,selected,{offline});v.append(c); }
+ v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
 document.querySelector('#refresh').onclick=load;load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);

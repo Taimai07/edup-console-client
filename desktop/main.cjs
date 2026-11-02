@@ -5,7 +5,7 @@ const {Logger}=require('../shared/logging.cjs');
 const {Updates}=require('./maintenance.cjs');
 const {ProtectedState}=require('./state.cjs');
 const {extractCodes,fileText}=require('./import.cjs');
-const {runUpdate}=require('./update-flow.cjs');
+const {UpdateController}=require('./update-controller.cjs');
 const {template:menuTemplate}=require('./menu.cjs');
 const {validateAIRequest}=require('../shared/ai-contract.cjs');
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
@@ -15,7 +15,7 @@ if(selfCheckIndex>=0){
  app.whenReady().then(()=>{
   const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable()};
   const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
-  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
+  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
   const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
   try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
   finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
@@ -25,7 +25,7 @@ if(selfCheckIndex>=0){
 app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
 app.whenReady().then(()=>{
  const userDir=app.getPath('userData');logger=new Logger(path.join(userDir,'logs'));
- const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false,updateFlow=false;
+ const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false;
  const configFile=path.join(userDir,'connection.json'),keyFile=path.join(userDir,'device-identity.bin');
  let config={serverUrl:'https://console.eduplinkaudio.com',paired:false};
  try{config=JSON.parse(fs.readFileSync(configFile,'utf8'));}catch{}
@@ -39,7 +39,7 @@ app.whenReady().then(()=>{
  const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
-  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
+  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
   if(u.host!=='console'||!files[u.pathname])return new Response('Not found',{status:404});
   const type=u.pathname.endsWith('.js')?'text/javascript':u.pathname.endsWith('.css')?'text/css':'text/html';
   return new Response(fs.readFileSync(path.join(__dirname,'../ui',files[u.pathname])),{headers:{'Content-Type':type+'; charset=utf-8','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:"}});
@@ -66,7 +66,7 @@ app.whenReady().then(()=>{
    if(!r.ok)throw Error((data.code||'HTTP_'+r.status)+(data.requestId?' / '+data.requestId:''));
    if(route==='health'&&data.apiVersion!==API_VERSION)throw Error('API_INCOMPATIBLE');
    return data;
-  }catch(e){logger.write('api_failed',{route,code:e.name||'REQUEST_FAILED'});throw e;}
+  }catch(e){logger.writeError('api_failed',e,{route,durationMs:Date.now()-start});throw e;}
  }
  ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(installing&&body!==undefined)throw Error('UPDATE_INSTALLING');if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
  ipcMain.handle('edup:ai',async(event,op,args)=>{checkSender(event);if(installing)throw Error('UPDATE_INSTALLING');return request('ai',validateAIRequest(op,args));});
@@ -76,6 +76,7 @@ app.whenReady().then(()=>{
   const file=updates.verifiedInstaller();
   installing=true;try{const backup=protectedState.backup(updates.manifest);logger.write('upgrade_backup',{count:backup.files});const error=await shell.openPath(file);if(error)throw Error('INSTALL_DISPATCH_FAILED');logger.write('update_installer_started');app.quit();return {state:'installing'};}catch(e){installing=false;try{protectedState.cancelUpgrade();}catch{}throw e;}
  }
+ const updateController=new UpdateController({updates,canRun:()=>!pairing&&!installing,confirm:async s=>{const r=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:'发现新版本 '+s.version+'，是否下载并安装？',detail:'安装会关闭软件，请先保存未完成的编辑。配对和设置会保留。',buttons:['下载并安装','稍后再说'],defaultId:0,cancelId:1,noLink:true});return r.response===0;},install:installUpdate,progress:active=>{if(win&&!win.isDestroyed())win.setProgressBar(active?2:-1);},onError:async e=>{logger.write('update_flow_failed',{code:e.message});if(win&&!win.isDestroyed())await dialog.showMessageBox(win,{type:'warning',title:'更新未完成',message:'暂时无法完成更新，可以继续使用当前版本。',detail:'稍后可在“同步与维护”中重试。',buttons:['确定']});}});
  ipcMain.handle('edup:maintenance',async(event,action,arg)=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
@@ -100,9 +101,7 @@ app.whenReady().then(()=>{
   }
   if(action==='update-status')return updates.state;
   if(action==='check-and-install-update'){
-   if(updateFlow)throw Error('UPDATE_IN_PROGRESS');updateFlow=true;
-   try{return await runUpdate({check:()=>updates.check(),confirm:async s=>{const r=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:'发现新版本 '+s.version+'，是否下载并安装？',detail:'安装时将关闭软件，配对和设置会保留。',buttons:['下载并安装','暂不更新'],defaultId:0,cancelId:1,noLink:true});return r.response===0;},download:()=>updates.download(),install:installUpdate});}
-   finally{updateFlow=false;}
+   return updateController.run();
   }
   if(action==='check-update')return updates.check();
   if(action==='download-update')return updates.download();
@@ -111,16 +110,16 @@ app.whenReady().then(()=>{
    const result=await dialog.showSaveDialog(win,{title:'导出诊断包（不含商品数据或密钥）',defaultPath:'EDUPLINK-diagnostics-'+new Date().toISOString().slice(0,10)+'.json',filters:[{name:'JSON',extensions:['json']}]});
    if(result.canceled||!result.filePath)return {saved:false};
    let server;try{server=await request('diagnostics');}catch{server={state:'unavailable'};}
-   const payload={format:1,createdAt:new Date().toISOString(),client:{version:VERSION,apiVersion:API_VERSION,electron:process.versions.electron,platform:process.platform,arch:process.arch,paired:config.paired},logs:logger.recent(100),server};
+   const payload={format:2,createdAt:new Date().toISOString(),client:{version:VERSION,apiVersion:API_VERSION,electron:process.versions.electron,platform:process.platform,arch:process.arch,paired:config.paired},...logger.export(),server};
    fs.writeFileSync(result.filePath,JSON.stringify(payload,null,2));return {saved:true};
   }
   throw Error('IPC_ACTION_INVALID');
  });
  win.webContents.once('did-finish-load',()=>{try{protectedState.confirmUi();}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
  win.loadURL('edup://console/');logger.write('client_started',{version:VERSION});
- const interval=setInterval(()=>updates.check(),6*60*60*1000);interval.unref();setTimeout(()=>updates.check(),10000).unref();
-}).catch(e=>{logger?.write('startup_failed',{code:e.message});dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});
+ const interval=setInterval(()=>updateController.run({automatic:true}),6*60*60*1000);interval.unref();setTimeout(()=>updateController.run({automatic:true}),3000).unref();
+}).catch(e=>{logger?.writeError('startup_failed',e);dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});
 }
-process.on('uncaughtException',e=>{logger?.write('uncaught_exception',{code:e.name});app.quit();});
-process.on('unhandledRejection',e=>logger?.write('unhandled_rejection',{code:e?.name||'PROMISE_REJECTED'}));
+process.on('uncaughtException',e=>{logger?.writeError('uncaught_exception',e);app.quit();});
+process.on('unhandledRejection',e=>logger?.writeError('unhandled_rejection',e));
 app.on('window-all-closed',()=>app.quit());
