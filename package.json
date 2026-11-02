@@ -1,7 +1,7 @@
 {
   "name": "edup-console-client",
   "productName": "EDUPLINK运营工作台",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A paired Windows client for a privately hosted operations service",
   "author": "EDUPLINK",
   "private": true,
