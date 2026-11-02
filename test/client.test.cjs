@@ -8,3 +8,5 @@ test('versions and diagnostics remain bounded',()=>{assert.equal(p.compareVersio
 test('release signature and downloaded file must match',()=>{const k=crypto.generateKeyPairSync('ed25519'),b=Buffer.from('fixture'),m={version:'0.3.0',platform:'win32-x64',channel:'stable',apiVersion:1,url:'https://github.com/Taimai07/edup-console-client/releases/download/v0.3.0/test.exe',sha256:crypto.createHash('sha256').update(b).digest('hex'),size:b.length};const payload=JSON.stringify(m),e={payload,signature:crypto.sign(null,Buffer.from(payload),k.privateKey).toString('base64')};assert.ok(u.validateRelease(e,{publicKey:k.publicKey,currentVersion:'0.2.0'}).available);assert.throws(()=>u.validateRelease({...e,payload:'{}'},{publicKey:k.publicKey,currentVersion:'0.2.0'}));assert.ok(u.verifyDownload(b,m));assert.throws(()=>u.verifyDownload(Buffer.from('bad'),m));});
 
 require('./update-flow.test.cjs');
+
+require('./ai-client.test.cjs');

@@ -1,6 +1,8 @@
 import {renderMaintenance} from './maintenance.js';
+import {mountAI} from './ai-host.js';
 import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './analytics.js';
-const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','同步与维护'];
+const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','同步与维护','运营 AI'];
+let disposeAI=null;
 let data=null,current=0,site='ALL',offline=false,cacheWarning='',detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set();
 const api=async(route,body)=>{if(window.edup)return window.edup.request(route,body);const r=await fetch('/api/'+route,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()}:{},body:body?JSON.stringify(body):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;};
 tabs.forEach((t,i)=>{const b=el('button',t);b.onclick=()=>{current=i;detail=null;render();};document.querySelector('#nav').append(b);});
@@ -12,10 +14,11 @@ async function load(){
 }
 function marketFilter(parent,allowAll=true){const select=el('select');const sites=[...new Set([...Object.keys(data.operating?.sites||{}),...Object.keys(data.operating?.traffic||{}),...data.products.map(p=>p.site)])].sort();for(const s of allowAll?['ALL',...sites]:sites){const o=el('option',s==='ALL'?'全部站点':(siteNames[s]||s)+' · '+s);o.value=s;select.append(o);}select.value=site;select.onchange=()=>{site=select.value;render();};parent.append(select);}
 function render(){
+ if(disposeAI){disposeAI();disposeAI=null;}
  document.querySelector('#title').textContent=detail?names[detail]+'趋势':tabs[current];[...document.querySelector('#nav').children].forEach((b,i)=>b.className=i===current?'active':'');
  const v=document.querySelector('#view');v.replaceChildren();
  document.querySelector('#notice').textContent=data?(offline?'离线查看 · ':'')+(data.operating?'北京时间 '+data.operating.day+' · 上次同步 '+data.operating.generatedAt+' · 平台数据有延迟。':'当前仅有历史资料，尚无当日统计。')+' '+cacheWarning:'首次使用请进入“同步与维护”完成电脑配对。';
- if(current===5){renderMaintenance(v,{api,reload:load});return;}if(!data)return;
+ if(current===5){renderMaintenance(v,{api,reload:load});return;}if(current===6){disposeAI=mountAI(v);return;}if(!data)return;
  const toolbar=el('div',undefined,'toolbar');if(current!==3)marketFilter(toolbar);else toolbar.append(el('span','上架任务目标：美国站','tag'));v.append(toolbar);
  if(detail){const back=el('button','返回经营总览');back.onclick=()=>{detail=null;render();};toolbar.append(back);renderDetail(v,detail);return;}
  if(current===0)overview(v);
