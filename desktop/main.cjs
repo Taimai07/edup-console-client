@@ -1,10 +1,12 @@
-const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell}=require('electron');
+const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto');
 const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/protocol.cjs');
 const {Logger}=require('../shared/logging.cjs');
 const {Updates}=require('./maintenance.cjs');
 const {ProtectedState}=require('./state.cjs');
 const {extractCodes,fileText}=require('./import.cjs');
+const {runUpdate}=require('./update-flow.cjs');
+const {template:menuTemplate}=require('./menu.cjs');
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let logger,win;
 const selfCheckIndex=process.argv.indexOf('--self-check');
@@ -22,7 +24,7 @@ if(selfCheckIndex>=0){
 app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
 app.whenReady().then(()=>{
  const userDir=app.getPath('userData');logger=new Logger(path.join(userDir,'logs'));
- const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false;
+ const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false,updateFlow=false;
  const configFile=path.join(userDir,'connection.json'),keyFile=path.join(userDir,'device-identity.bin');
  let config={serverUrl:'https://console.eduplinkaudio.com',paired:false};
  try{config=JSON.parse(fs.readFileSync(configFile,'utf8'));}catch{}
@@ -42,6 +44,7 @@ app.whenReady().then(()=>{
   return new Response(fs.readFileSync(path.join(__dirname,'../ui',files[u.pathname])),{headers:{'Content-Type':type+'; charset=utf-8','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:"}});
  });
  win=new BrowserWindow({width:1320,height:880,minWidth:980,minHeight:680,title:'EDUPLINK 运营工作台',icon:path.join(__dirname,'../assets/icon.png'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+ Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate({about:()=>dialog.showMessageBox(win,{type:'info',title:'关于运营工作台',message:'EDUPLINK 运营工作台',detail:'版本 '+VERSION+'\n个人自用',buttons:['确定']})})));
  win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
  const trustedUrl=url=>{try{const u=new URL(url);return u.protocol==='edup:'&&u.host==='console';}catch{return false;}};
  win.webContents.on('will-navigate',(e,url)=>{if(!trustedUrl(url))e.preventDefault();});
@@ -65,6 +68,12 @@ app.whenReady().then(()=>{
   }catch(e){logger.write('api_failed',{route,code:e.name||'REQUEST_FAILED'});throw e;}
  }
  ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(installing&&body!==undefined)throw Error('UPDATE_INSTALLING');if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
+ async function installUpdate(){
+  if(pairing)throw Error('PAIR_IN_PROGRESS');
+  if(!app.isPackaged)throw Error('INSTALL_REQUIRES_PACKAGED_APP');
+  const file=updates.verifiedInstaller();
+  installing=true;try{const backup=protectedState.backup(updates.manifest);logger.write('upgrade_backup',{count:backup.files});const error=await shell.openPath(file);if(error)throw Error('INSTALL_DISPATCH_FAILED');logger.write('update_installer_started');app.quit();return {state:'installing'};}catch(e){installing=false;try{protectedState.cancelUpgrade();}catch{}throw e;}
+ }
  ipcMain.handle('edup:maintenance',async(event,action,arg)=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
@@ -88,14 +97,14 @@ app.whenReady().then(()=>{
    }finally{pairing=false;}
   }
   if(action==='update-status')return updates.state;
+  if(action==='check-and-install-update'){
+   if(updateFlow)throw Error('UPDATE_IN_PROGRESS');updateFlow=true;
+   try{return await runUpdate({check:()=>updates.check(),confirm:async s=>{const r=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:'发现新版本 '+s.version+'，是否下载并安装？',detail:'安装时将关闭软件，配对和设置会保留。',buttons:['下载并安装','暂不更新'],defaultId:0,cancelId:1,noLink:true});return r.response===0;},download:()=>updates.download(),install:installUpdate});}
+   finally{updateFlow=false;}
+  }
   if(action==='check-update')return updates.check();
   if(action==='download-update')return updates.download();
-  if(action==='install-update'){
-   if(pairing)throw Error('PAIR_IN_PROGRESS');
-   if(!app.isPackaged)throw Error('INSTALL_REQUIRES_PACKAGED_APP');
-   const file=updates.verifiedInstaller();
-   installing=true;try{const backup=protectedState.backup(updates.manifest);logger.write('upgrade_backup',{count:backup.files});const error=await shell.openPath(file);if(error)throw Error('INSTALL_DISPATCH_FAILED');logger.write('update_installer_started');app.quit();return {state:'installing'};}catch(e){installing=false;try{protectedState.cancelUpgrade();}catch{}throw e;}
-  }
+  if(action==='install-update')return installUpdate();
   if(action==='diagnostics'){
    const result=await dialog.showSaveDialog(win,{title:'导出诊断包（不含商品数据或密钥）',defaultPath:'EDUPLINK-diagnostics-'+new Date().toISOString().slice(0,10)+'.json',filters:[{name:'JSON',extensions:['json']}]});
    if(result.canceled||!result.filePath)return {saved:false};

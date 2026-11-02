@@ -13,11 +13,11 @@ export async function renderMaintenance(view,{api,reload}){
  button('连接诊断',async()=>{const r=await api('health');return '连接成功 · 后台 '+r.version+' · API '+r.apiVersion+' · 时间 '+r.serverTime;});
  box.append(server,code,actions,result);
  try{const s=await call('settings');server.value=s.serverUrl;box.append(el('p','客户端 '+s.version+' · 设备 '+s.deviceId+' · '+(s.paired?'已配对':'尚未配对'),'muted'));}catch(e){result.textContent=e.message;}
- const update=card('软件更新','从公开发布页获取更新，校验签名和文件后下载。覆盖安装保留配对与设置；应用内安装前生成加密恢复副本。安装后重新打开软件核验，失败不会自动恢复或重新安装。');const buttons=el('div',undefined,'toolbar'),state=el('div',undefined,'result');
- const names={idle:'尚未检查',checking:'正在检查',available:'有可用更新',current:'当前已是最新版本',not_published:'尚无已签名的正式更新',check_failed:'更新检查暂不可用',downloading:'正在下载',ready:'下载已校验，可以安装',download_failed:'下载未完成，请稍后重试'};
- const show=s=>{state.textContent=(names[s.state]||s.state)+(s.version?' · '+s.version:'')+(s.notes?'\n'+s.notes:'')+(s.code?'\n错误编号：'+s.code:'');};
- for(const [label,action] of [['检查更新','check-update'],['下载更新','download-update'],['安装更新并退出','install-update']]){const b=el('button',label);b.onclick=async()=>{b.disabled=true;try{show(await call(action));}catch(e){state.textContent=e.message;}finally{b.disabled=false;}};buttons.append(b);}
- update.append(buttons,state);view.append(update);try{show(await call('update-status'));}catch{}
+ const update=card('软件更新',''),buttons=el('div',undefined,'toolbar'),state=el('div',undefined,'result');
+ const names={idle:'',checking:'正在检查更新…',available:'有可用更新',current:'当前已是最新版本',not_published:'暂未发布正式更新',check_failed:'检查失败，请稍后重试',downloading:'正在下载更新…',ready:'下载已校验，正在准备安装…',download_failed:'下载失败，请稍后重试',cancelled:'已取消更新',installing:'正在启动安装…'};
+ const show=s=>{state.textContent=(names[s.state]??s.state)+(s.version&&s.state==='current'?' · '+s.version:'')+(s.code?' · '+s.code:'');};
+ const check=el('button','检查更新');check.onclick=async()=>{check.disabled=true;state.textContent='正在检查更新…';const poll=setInterval(async()=>{try{show(await call('update-status'));}catch{}},500);try{const r=await call('check-and-install-update');clearInterval(poll);show(r);}catch(e){clearInterval(poll);state.textContent='更新未完成：'+e.message;}finally{check.disabled=false;}};
+ buttons.append(check);update.append(buttons,state);view.append(update);
  const diagnostics=card('日志与诊断包','滚动保留客户端与服务端运行日志。导出包包含版本、错误编号和请求编号，不包含商品明细、配对码或API密钥。');const exportButton=el('button','导出诊断包');exportButton.onclick=async()=>{try{const r=await call('diagnostics');result.textContent=r.saved?'诊断包已保存':'已取消导出';}catch(e){result.textContent=e.message;}};diagnostics.append(exportButton);view.append(diagnostics);
  view.append(card('数据同步','经营数据和商品资料由服务器定期更新，页面每分钟读取已有结果。访问与转化报表等待平台生成，广告尚未接通。每项数据的实际时间以报表标注为准。'));
 }

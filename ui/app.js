@@ -1,5 +1,5 @@
 import {renderMaintenance} from './maintenance.js';
-import {el,card,number,table,names,siteNames,today,totals,moneyText,salesSeries,chart,strategies} from './analytics.js';
+import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './analytics.js';
 const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','同步与维护'];
 let data=null,current=0,site='ALL',offline=false,cacheWarning='',detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set();
 const api=async(route,body)=>{if(window.edup)return window.edup.request(route,body);const r=await fetch('/api/'+route,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()}:{},body:body?JSON.stringify(body):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;};
@@ -26,8 +26,8 @@ function render(){
 }
 function overview(v){
  const t=totals(data,site),grid=el('div',undefined,'grid kpis');
- const metrics=[['sales',moneyText(t.money),'北京时间今天零点起；不同币种分开显示'],['units',number(t.units),'按下单商品件数统计'],['orders',number(t.orders),'订单数与商品件数不同'],['profit',moneyText(t.profit),'仅普通M6，覆盖 '+t.coverage+' 件；按历史单件余额估算'],['ads','—','尚无同口径当日广告数据'],['sessions','—','访问报表有延迟，点击查看已生成趋势'],['refunds','—','点击查看平台报表退款件数；不等于实物退货']];
- for(const [key,value,note]of metrics){const x=card(names[key]);x.classList.add('kpi');x.tabIndex=0;x.setAttribute('role','button');x.append(el('div',value,'metric'),el('p',note,'muted'));x.onclick=()=>{detail=key;span='today';render();};x.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();x.click();}};grid.append(x);}v.append(grid);
+ const metrics=[['sales',usdText(t.salesUSD),'北京时间今天零点起；所有已统计站点折算美元'],['units',number(t.units),'按下单商品件数统计'],['profit',usdText(t.profitUSD),'已知成本部分合计，覆盖 '+t.coverage+' / '+(t.units??'—')+' 件；其余商品成本未齐'],['ads','—','尚无同口径当日广告数据'],['sessions','—','访问报表有延迟，点击查看已生成趋势'],['refunds','—','点击查看平台报表退款件数；不等于实物退货']];
+ for(const [key,value,note]of metrics){const x=card(names[key]);x.classList.add('kpi');x.tabIndex=0;x.setAttribute('role','button');x.append(el('div',value,'metric'),el('p',note,'muted'));x.onclick=()=>{detail=key;span='today';render();};x.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();x.click();}};grid.append(x);}v.append(grid,el('p',fxNote(data),'muted'));if(t.missingRates?.length)v.append(card('汇率待补齐','缺少 '+t.missingRates.join('、')+' 汇率，总销售额暂不显示不完整合计。'));if(t.siteCount!==Object.keys(data.operating?.sites||{}).length)v.append(card('统计范围提示','当前合计仅覆盖成功同步的 '+(t.siteCount||0)+' 个站点，请核对下方同步提示。'));
  const box=card('重点发现与经营建议','结论使用已注明日期的数据，需与当期活动、库存和毛利一起判断。'),row=el('div',undefined,'strategy-row');
  for(const i of strategies(data,site)){const c=el('div',undefined,'strategy');c.append(el('h3',(i.site?(siteNames[i.site]||i.site)+' · ':'')+i.title),el('p',i.body),el('p','依据时间 '+i.asOf,'muted'));row.append(c);}box.append(row);v.append(box);
  if(data.operating){const states=Object.entries(data.operating.sites).filter(([,x])=>x.state!=='ok');if(states.length)v.append(card('同步覆盖提示',states.map(([s,x])=>s+'：'+(x.error||'未完成')).join('；')));}
@@ -35,8 +35,8 @@ function overview(v){
 function controls(parent,platform=false){const tools=el('div',undefined,'toolbar');for(const [key,label]of [['today',platform?'最新报表日':'今天分时'],['7',platform?'最近7个报表日':'近7天'],['30',platform?'最近30个报表日':'近30天'],['all','全部已存日期']]){const b=el('button',label);b.className=span===key?'selected':'';b.onclick=()=>{span=key;from='';to='';render();};tools.append(b);}for(const [label,value,set]of [['开始日期',from,x=>from=x],['结束日期',to,x=>to=x]]){const input=el('input');input.type='date';input.value=value;input.setAttribute('aria-label',label);input.onchange=()=>{set(input.value);render();};tools.append(input);}parent.append(tools);}
 function renderDetail(v,key){
  controls(v,key==='sessions'||key==='refunds');
- if(['sales','units','orders'].includes(key)){const series=salesSeries(data,site,key,span);for(const c of new Set(series.map(x=>x.currency)))v.append(chart(names[key]+' · '+c,series.filter(x=>x.currency===c),{unit:key==='sales'?c:key==='units'?'件':'单',start:from,end:to,note:'北京时间口径；缺失区间不补零，鼠标移动查看时间和值。'}));if(!series.length)v.append(card(names[key],'当前没有该范围的可用数据。'));return;}
- if(key==='profit'){const t=totals(data,site);v.append(card('今日普通M6参考毛利',moneyText(t.profit)+'，覆盖 '+t.coverage+' 件。使用历史10月单件余额乘以今日同SKU销量；已经计入80元采购及头程，但未扣广告、退款、仓储等。此处不是全店净利润。'));v.append(card('分时趋势尚未具备','当前只有今日估算合计，不能据此虚构小时曲线。历史成本明细请看经营报表的“SKU收支与成本”。'));return;}
+ if(['sales','units','orders'].includes(key)){const series=salesSeries(data,site,key,span);for(const c of new Set(series.map(x=>x.currency)))v.append(chart(names[key]+' · '+c,series.filter(x=>x.currency===c),{unit:key==='sales'?c:key==='units'?'件':'单',start:from,end:to,note:'北京时间口径；'+(key==='sales'?fxNote(data):'鼠标移动查看时间和值。')}));if(!series.length)v.append(card(names[key],'当前没有该范围的可用数据。'));return;}
+ if(key==='profit'){const t=totals(data,site);v.append(card('今日已知成本商品的总毛利估算',usdText(t.profitUSD)+'，覆盖 '+t.coverage+' / '+(t.units??'—')+' 件。按历史单件余额乘今日SKU销量后汇总，并统一折算美元；已计采购及头程，未扣广告、退款、仓储。其他款成本未齐，尚不能得到与全部销售额对应的完整毛利。'));if(span==='today'){v.append(chart('估算总毛利 · USD',profitSeries(data,site),{unit:'USD',start:from,end:to,note:fxNote(data)+' 仅已知成本普通M6；按历史单位余额估算。'}));}else v.append(card('历史毛利曲线暂缺','当前只采集了当日的SKU分时毛利估算；不能据此推算历史整店毛利。'));return;}
  if(key==='ads'){v.append(card('暂无广告趋势','等待广告数据接入；不会绘制虚构的0元曲线。'));return;}
  const field=key==='sessions'?'sessions':'refundedUnits';trafficCharts(v,[field]);
 }
@@ -56,7 +56,7 @@ function products(v){
 function reports(v){
  const choices=[['sales','销售趋势'],['traffic','流量与转化'],['refunds','退款与发货'],['rank','商品排行'],['cost','SKU收支与成本'],['markets','站点对比'],['promotions','促销活动'],['inventory','库存与刊登'],['compliance','合规费用']];
  const nav=el('div',undefined,'report-tabs');for(const [k,label]of choices){const b=el('button',label);b.className=report===k?'selected':'';b.onclick=()=>{report=k;render();};nav.append(b);}v.append(nav);
- if(report==='sales'){controls(v);for(const k of ['sales','units','orders']){const points=salesSeries(data,site,k,span);for(const c of new Set(points.map(x=>x.currency)))v.append(chart(names[k]+' · '+c,points.filter(x=>x.currency===c),{start:from,end:to,note:'下单时间口径，北京时间。'}));}return;}
+ if(report==='sales'){controls(v);for(const k of ['sales','units']){const points=salesSeries(data,site,k,span);for(const c of new Set(points.map(x=>x.currency)))v.append(chart(names[k]+' · '+c,points.filter(x=>x.currency===c),{start:from,end:to,unit:k==='sales'?'USD':'件',note:'下单时间口径，北京时间。'+(k==='sales'?fxNote(data):'')}));}return;}
  if(report==='traffic'){controls(v,true);trafficCharts(v,['sessions','pageViews','conversion','buyBoxPct']);return;}
  if(report==='refunds'){controls(v,true);trafficCharts(v,['refundedUnits','shippedUnits']);v.append(card('口径说明','退款件数来自销售流量报表，不等于当天实际退回仓库的件数；目前尚无同口径的北京时间当天退货数据。'));return;}
  if(report==='rank'){for(const [s,t]of Object.entries(data.operating?.traffic||{})){if(site!=='ALL'&&site!==s)continue;const c=card((siteNames[s]||s)+' · 商品排行','整份报表范围的子ASIN汇总，不是今天；按销售额降序。');c.append(table(['ASIN','销售额','件数','访问次数','件数转化率'],t.asins.filter(x=>x.asin).sort((a,b)=>b.sales-a.sales).map(x=>[x.asin,number(x.sales),number(x.units),number(x.sessions),x.sessions?number(x.units/x.sessions*100)+'%':'—'])));v.append(c);}return;}
