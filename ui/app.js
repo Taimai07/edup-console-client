@@ -16,7 +16,8 @@ async function load(){
  catch(e){loadError=e;try{data=desktop?await window.edup.maintenance('read-cache'):JSON.parse(localStorage.getItem('edup-A-snapshot'));}catch{data=null;}offline=true;}render();
 }
 function marketFilter(parent,allowAll=true){const select=el('select');const sites=[...new Set([...Object.keys(data.operating?.sites||{}),...Object.keys(data.operating?.traffic||{}),...data.products.map(p=>p.site)])].sort();for(const s of allowAll?['ALL',...sites]:sites){const o=el('option',s==='ALL'?'全部站点':(siteNames[s]||s)+' · '+s);o.value=s;select.append(o);}select.value=site;select.onchange=()=>{site=select.value;render();};parent.append(select);}
-function render(){
+function render(){renderContent();document.documentElement.dataset.edupReady='true';window.edup?.ready?.().catch(()=>{});}
+function renderContent(){
  document.body.classList.toggle("ai-page",current===5);
  if(disposeAI){disposeAI();disposeAI=null;}
  document.querySelector('#title').textContent=detail?names[detail]+'趋势':tabs[current];[...document.querySelector('#nav').children].forEach((b,i)=>b.className=i===current?'active':'');

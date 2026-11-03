@@ -30,7 +30,7 @@ $receipt = Join-Path $stage 'self-check.json'
 $p = Start-Process -FilePath $exe -ArgumentList @('--self-check',"`"$receipt`"") -WindowStyle Hidden -Wait -PassThru
 if ($p.ExitCode -ne 0 -or !(Test-Path -LiteralPath $receipt)) { throw 'Installed application self-check failed' }
 $check = Get-Content -LiteralPath $receipt -Raw | ConvertFrom-Json
-if (!$check.ok -or !$check.packaged -or $check.version -ne $pkg.version -or $check.userDataBasename -ne $pkg.productName) { throw 'Installed version or data location mismatch' }
+if (!$check.ok -or !$check.renderer.ready -or !$check.packaged -or $check.version -ne $pkg.version -or $check.userDataBasename -ne $pkg.productName) { throw 'Installed version or data location mismatch' }
 if (!$check.patchBootstrap -or $check.bootstrapVersion -ne $pkg.version) { throw 'Patch bootstrap missing' }
 @{ previous='0.2.0'; current=$pkg.version; preservedFiles=$names.Count; selfCheck=$check } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath dist/windows-upgrade-receipt.json -Encoding utf8
 Write-Host "Upgrade from 0.2.0 to $($pkg.version): state preserved; packaged headless self-check passed."

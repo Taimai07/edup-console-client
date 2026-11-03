@@ -1,3 +1,4 @@
+const {createUIHandler}=require('./ui-assets.cjs');
 const {DiagnosticsUpload}=require('./diagnostics-upload.cjs');
 const appPatch=globalThis[Symbol.for('edup.patch')];
 const {buildZiniaoRoute}=require('./ziniao.cjs');
@@ -16,17 +17,18 @@ protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,s
 let logger,win;
 const selfCheckIndex=process.argv.indexOf('--self-check');
 if(selfCheckIndex>=0){
- app.whenReady().then(()=>{
+ app.whenReady().then(async()=>{
   const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable(),patchBootstrap:!!appPatch,bootstrapVersion:appPatch?.baseVersion||null};
   const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
   result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js','network-settings.js','workspace-v2.js','workspace-v2.css','browser-settings.js','batch-chat.js','batch-progress.js','materials.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
   const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
   try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
   finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
-  result.ok=result.protectionRoundtrip&&result.uiFiles&&result.protectedRecovery;fs.writeFileSync(process.argv[selfCheckIndex+1],JSON.stringify(result));if(result.ok)appPatch?.healthy(VERSION);app.exit(result.ok?0:1);
- }).catch(()=>app.exit(1));
+  result.renderer=await require('./renderer-check.cjs').checkRenderer({app,BrowserWindow,protocol,ipcMain},path.join(__dirname,'../ui'));
+  result.ok=result.protectionRoundtrip&&result.uiFiles&&result.protectedRecovery&&result.renderer.ready;fs.writeFileSync(process.argv[selfCheckIndex+1],JSON.stringify(result));if(result.ok)appPatch?.healthy(VERSION);app.exit(result.ok?0:1);
+ }).catch(e=>{fs.writeFileSync(process.argv[selfCheckIndex+1],JSON.stringify({ok:false,code:e.message}));if(!appPatch?.fail('RENDERER_SELF_CHECK_FAILED'))app.exit(1);});
 }else if(!appPatch?.singleInstanceOwned&&!app.requestSingleInstanceLock()){app.quit();}else{
-app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
+app.on('second-instance',(_event,argv)=>{if(argv.includes('--background'))return;if(win){if(win.isMinimized())win.restore();win.focus();}});
 app.whenReady().then(async()=>{
  const userDir=app.getPath('userData');logger=new Logger(path.join(userDir,'logs'));
  const protectedState=new ProtectedState(userDir,safeStorage);const recovery=protectedState.inspectUpgrade(VERSION);let installing=false,pairing=false;
@@ -43,12 +45,7 @@ app.whenReady().then(async()=>{
  function validateBase(value){const u=new URL(value);if(u.username||u.password||u.search||u.hash||u.pathname!=='/'||u.origin!==VPS_ORIGIN)throw Error('VPS_ENDPOINT_REQUIRED');return u.origin;}
  const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery,patch:appPatch?{bootstrapVersion:appPatch.baseVersion,lastResult:appPatch.store.lastResult()}:null,proxy:network.settings});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
- protocol.handle('edup',req=>{
-  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/batch-chat.js':'batch-chat.js','/batch-progress.js':'batch-progress.js','/materials.js':'materials.js','/browser-settings.js':'browser-settings.js','/workspace-v2.css':'workspace-v2.css','/workspace-v2.js':'workspace-v2.js','/network-settings.js':'network-settings.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
-  if(u.host!=='console'||!files[u.pathname])return new Response('Not found',{status:404});
-  const type=u.pathname.endsWith('.js')?'text/javascript':u.pathname.endsWith('.css')?'text/css':'text/html';
-  return new Response(fs.readFileSync(path.join(__dirname,'../ui',files[u.pathname])),{headers:{'Content-Type':type+'; charset=utf-8','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:"}});
- });
+ protocol.handle('edup',createUIHandler(path.join(__dirname,'../ui'),{missing:route=>logger.write('ui_asset_missing',{route,code:'UI_ASSET_NOT_FOUND'})}));
  win=new BrowserWindow({show:false,width:1320,height:880,minWidth:980,minHeight:680,title:'EDUPLINK 运营工作台',icon:path.join(__dirname,'../assets/icon.png'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate({about:()=>dialog.showMessageBox(win,{type:'info',title:'关于运营工作台',message:'EDUPLINK 运营工作台',detail:'版本 '+VERSION+'\n个人自用',buttons:['确定']})})));
  win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
@@ -154,11 +151,13 @@ app.whenReady().then(async()=>{
   }
   throw Error('IPC_ACTION_INVALID');
  });
- win.webContents.once('did-finish-load',()=>{if(process.argv.includes('--background'))win.showInactive();else win.show();try{protectedState.confirmUi();appPatch?.healthy(VERSION);}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
+ let uiReady=false;const uiTimer=setTimeout(()=>{if(uiReady)return;logger.write('ui_startup_failed',{code:'RENDERER_NOT_READY'});if(appPatch?.fail('RENDERER_NOT_READY'))return;dialog.showErrorBox('界面未能打开','请重新打开软件，或用最新版安装包覆盖安装。你的资料会保留。');},45000);uiTimer.unref();
+ ipcMain.handle('edup:ui-ready',event=>{checkSender(event);if(uiReady)return {ready:true};uiReady=true;clearTimeout(uiTimer);protectedState.confirmUi();appPatch?.healthy(VERSION);logger.write('ui_ready',{version:VERSION});return {ready:true};});
+ win.webContents.once('did-finish-load',()=>{if(process.argv.includes('--background'))win.showInactive();else win.show();});
  win.loadURL('edup://console/');logger.write('client_started',{version:VERSION});
  const interval=setInterval(()=>updateController.run({automatic:true}),6*60*60*1000);interval.unref();setTimeout(()=>updateController.run({automatic:true}),3000).unref();
 }).catch(e=>{logger?.writeError('startup_failed',e);if(appPatch?.fail('STARTUP_FAILED'))return;dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});
 }
 process.on('uncaughtException',e=>{logger?.writeError('uncaught_exception',e);if(!appPatch?.fail('UNCAUGHT_EXCEPTION'))app.quit();});
 process.on('unhandledRejection',e=>logger?.writeError('unhandled_rejection',e));
-app.on('window-all-closed',()=>app.quit());
+app.on('window-all-closed',()=>{if(selfCheckIndex<0)app.quit();});
