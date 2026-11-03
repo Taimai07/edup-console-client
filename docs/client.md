@@ -19,3 +19,4 @@ health. Missing dependencies are startup failures even if HTML loaded successful
 The AI iframe is isolated and communicates through the existing bounded bridge.
 Business reports use safe text/DOM rendering. Raw diagnostics remain in maintenance.
 Never fix a load failure by disabling Electron sandboxing or opening arbitrary paths.
+

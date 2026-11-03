@@ -18,3 +18,11 @@ bootstrap fallback, offline launch, missing renderer dependency, rollback and da
 preservation. An actual second household PC is a separate acceptance surface from
 two simulated profiles. Server request records can show its version/connectivity,
 but cannot prove its window renders correctly.
+
+The current accepted repair is 0.7.9. Direct migration from official 0.7.4 and
+0.7.7 application payloads is verified with separate synthetic profiles. Local
+packaged installation also reports live-data UI readiness and preserved state.
+These results do not certify the second physical computer's display or network.
+If a broken older UI cannot reach its update page, the signed full installer
+provides an independent repair route; it preserves the product's user-data folder.
+
