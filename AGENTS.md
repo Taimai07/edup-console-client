@@ -16,8 +16,9 @@ The public client repository must not contain private service configuration or d
 - private-backend/: local private source; excluded from public export.
 
 ## Current state and rules
-Client 0.7.7 is published. Its desktop asset map omits human-report.js, blocking
-module initialization. Repair and regression verification are in progress.
+Client source 0.7.9 uses one desktop asset handler and real renderer readiness.
+Native offline, skipped-version and missing-dependency rollback checks pass.
+Release/install acceptance must be verified separately on each real device.
 Do not interpret an HTML load event or file existence as a working renderer.
 User data, device identity and logs must survive updates and rollback.
 Clients contact the configured private service; no seller/model credentials in UI.
