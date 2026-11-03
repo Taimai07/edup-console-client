@@ -20,3 +20,14 @@ The AI iframe is isolated and communicates through the existing bounded bridge.
 Business reports use safe text/DOM rendering. Raw diagnostics remain in maintenance.
 Never fix a load failure by disabling Electron sandboxing or opening arbitrary paths.
 
+## Submission availability
+Site discovery is a read-only business operation in the shared desktop/server
+contract. A successful private-server call does not prove the desktop permits it.
+The UI contract regression check and native signed-client acceptance cover this.
+
+Product readiness, selected-site availability and live business connectivity are
+separate conditions. If a ready row is disabled, explain the blocking condition
+beside that row. Do not let an old dashboard-cache failure silently disable a
+currently reachable business flow. A retry must refresh site discovery too.
+Clicking submit first requests a fresh, bound proposal; only the final confirmation
+may execute the seller change.

@@ -24,7 +24,7 @@ function renderContent(){
  const v=document.querySelector('#view');v.replaceChildren();v.classList.remove('workspace-v2');
  syncStatus(document.querySelector('#notice'),{data,offline,cacheWarning,error:loadError,onSettings:()=>{current=6;detail=null;render();},onRetry:load});
  if(current===6){renderMaintenance(v,{api,reload:load});return;}if(current===5){disposeAI=mountAI(v);return;}if(!data)return;
- const toolbar=el('div',undefined,'toolbar');if(![1,2,3].includes(current))marketFilter(toolbar);else if(current===3){const picker=el('select'),label=el('label','上架站点 ');picker.setAttribute('aria-label','上架站点');for(const row of listingSites?.sites||[]){const o=el('option',row.name);o.value=row.code;picker.append(o);}if(!picker.options.length){const o=el('option',listingSites?.checking?'正在检查可用站点…':'暂无已接通站点');o.value='';picker.append(o);}picker.disabled=offline||!listingSites?.sites?.length;picker.value=gigaSite;picker.onchange=()=>{gigaSite=picker.value;render();};label.append(picker);toolbar.append(label);if(!listingSites){businessCall('service_status').then(r=>{listingSites=r.listingSites||{sites:[]};if(!listingSites.sites.some(x=>x.code===gigaSite))gigaSite=listingSites.sites[0]?.code||'';if(current===3)render();}).catch(()=>{listingSites={sites:[]};if(current===3)render();});}}v.append(toolbar);
+ const toolbar=el('div',undefined,'toolbar');if(![1,2,3].includes(current))marketFilter(toolbar);else if(current===3){const picker=el('select'),label=el('label','上架站点 ');picker.setAttribute('aria-label','上架站点');for(const row of listingSites?.sites||[]){const o=el('option',row.name);o.value=row.code;picker.append(o);}if(!picker.options.length){const o=el('option',listingSites?.checking?'正在检查可用站点…':listingSites?.unavailable||listingSites?.verificationIncomplete?'暂时无法核对站点，请刷新':'暂无已接通站点');o.value='';picker.append(o);}picker.disabled=offline||!listingSites?.sites?.length;picker.value=gigaSite;picker.onchange=()=>{gigaSite=picker.value;render();};label.append(picker);toolbar.append(label);if(!listingSites){businessCall('service_status').then(r=>{listingSites=r.listingSites||{sites:[]};if(!listingSites.sites.some(x=>x.code===gigaSite))gigaSite=listingSites.sites[0]?.code||'';if(current===3)render();}).catch(()=>{listingSites={sites:[],unavailable:true};if(current===3)render();});}}v.append(toolbar);
  if(detail){const back=el('button','返回经营总览');back.onclick=()=>{detail=null;render();};toolbar.append(back);renderDetail(v,detail);return;}
  if(current===0)overview(v);
  if(current===1)renderWorkspace(v,{data,mode:'products',offline,redraw:render,navigate:mode=>{current=mode==='products'?1:2;render();}});
@@ -84,11 +84,12 @@ function giga(v){
  if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；普通数字、日期和金额不会直接作为编码。');
  for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
  const count=el('p','已选择 '+selected.size+' 个');c.append(count);v.append(c); }
- const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline:offline||!gigaSite||!listingSites?.sites?.length,site:gigaSite});v.append(operations);
+ const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline,site:gigaSite,siteAvailable:!!gigaSite&&!!listingSites?.sites?.some(x=>x.code===gigaSite),siteChecking:!listingSites||!!listingSites.checking});v.append(operations);
  v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
-document.querySelector('#refresh').onclick=load;load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);
+document.querySelector('#refresh').onclick=()=>{if(current===3)listingSites=null;load();};load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);
 
 if(window.edup?.maintenance)window.edup.maintenance('settings').then(s=>{const label=document.querySelector('#client-version');if(label)label.textContent='个人自用 · v'+s.version;}).catch(()=>{});
 
 setInterval(async()=>{if(current!==3||document.hidden)return;try{const r=await businessCall('service_status'),next=r.listingSites||{sites:[]};if(JSON.stringify(next.sites)!==JSON.stringify(listingSites?.sites)){listingSites=next;if(!next.sites.some(x=>x.code===gigaSite))gigaSite=next.sites[0]?.code||'';render();}}catch{}},60000);
+

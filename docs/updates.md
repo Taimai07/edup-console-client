@@ -25,4 +25,3 @@ packaged installation also reports live-data UI readiness and preserved state.
 These results do not certify the second physical computer's display or network.
 If a broken older UI cannot reach its update page, the signed full installer
 provides an independent repair route; it preserves the product's user-data folder.
-
