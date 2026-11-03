@@ -19,7 +19,7 @@ preservation. An actual second household PC is a separate acceptance surface fro
 two simulated profiles. Server request records can show its version/connectivity,
 but cannot prove its window renders correctly.
 
-The current locally accepted client is 0.7.11. The startup repair was validated by
+The current locally accepted client is 0.7.12. The startup repair was validated by
 direct migration from official 0.7.4 and 0.7.7 payloads using separate synthetic
 profiles; subsequent signed patches preserve that bootstrap and renderer check.
 Local packaged installation reports renderer readiness and preserved state.
