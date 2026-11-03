@@ -33,4 +33,5 @@ Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus c
 - docs/client.md: renderer loading, IPC, health and submission availability.
 - docs/updates.md: signed full application patches, skipped versions and recovery.
 - docs/private-services.md: private deployment boundaries and acceptance sources.
+- docs/batch-submission.md: fixed batch selection, asynchronous submission and per-item results.
 Update current intent/state in these documents after changes; do not append a diary.

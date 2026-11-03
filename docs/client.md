@@ -29,5 +29,9 @@ Product readiness, selected-site availability and live business connectivity are
 separate conditions. If a ready row is disabled, explain the blocking condition
 beside that row. Do not let an old dashboard-cache failure silently disable a
 currently reachable business flow. A retry must refresh site discovery too.
-Clicking submit first requests a fresh, bound proposal; only the final confirmation
-may execute the seller change.
+Single-item submission requests a bound proposal before final confirmation.
+Batch submission displays a fixed price/quantity list before one confirmation;
+the private server persists and processes it independently of the window lifetime.
+Keep the root batch selected when a child is refreshed. Merge child status into
+the original rows; never replace a multi-item list with one item's preparation job.
+Discard stale responses after the user selects another batch. See batch-submission.md.
