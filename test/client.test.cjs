@@ -12,6 +12,7 @@ require('./update-flow.test.cjs');
 require('./ai-client.test.cjs');
 require('./startup-update.test.cjs');
 require('./logging-errors.test.cjs');
+require('./diagnostics-upload.test.cjs');
 
 require('./network.test.cjs');
 

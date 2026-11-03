@@ -85,3 +85,5 @@ function giga(v){
  v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
 document.querySelector('#refresh').onclick=load;load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);
+
+if(window.edup?.maintenance)window.edup.maintenance('settings').then(s=>{const label=document.querySelector('#client-version');if(label)label.textContent='个人自用 · v'+s.version;}).catch(()=>{});

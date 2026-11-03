@@ -1,3 +1,4 @@
+const {DiagnosticsUpload}=require('./diagnostics-upload.cjs');
 const appPatch=globalThis[Symbol.for('edup.patch')];
 const {buildZiniaoRoute}=require('./ziniao.cjs');
 const {Network,VPS_ORIGIN}=require('./network.cjs');
@@ -18,7 +19,7 @@ if(selfCheckIndex>=0){
  app.whenReady().then(()=>{
   const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable(),patchBootstrap:!!appPatch,bootstrapVersion:appPatch?.baseVersion||null};
   const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
-  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js','network-settings.js','workspace-v2.js','workspace-v2.css','browser-settings.js','batch-chat.js','dot-reports.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
+  result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js','network-settings.js','workspace-v2.js','workspace-v2.css','browser-settings.js','batch-chat.js','batch-progress.js','materials.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
   const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
   try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
   finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
@@ -43,12 +44,12 @@ app.whenReady().then(async()=>{
  const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery,patch:appPatch?{bootstrapVersion:appPatch.baseVersion,lastResult:appPatch.store.lastResult()}:null,proxy:network.settings});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
-  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/batch-chat.js':'batch-chat.js','/dot-reports.js':'dot-reports.js','/browser-settings.js':'browser-settings.js','/workspace-v2.css':'workspace-v2.css','/workspace-v2.js':'workspace-v2.js','/network-settings.js':'network-settings.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
+  const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/batch-chat.js':'batch-chat.js','/batch-progress.js':'batch-progress.js','/materials.js':'materials.js','/browser-settings.js':'browser-settings.js','/workspace-v2.css':'workspace-v2.css','/workspace-v2.js':'workspace-v2.js','/network-settings.js':'network-settings.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
   if(u.host!=='console'||!files[u.pathname])return new Response('Not found',{status:404});
   const type=u.pathname.endsWith('.js')?'text/javascript':u.pathname.endsWith('.css')?'text/css':'text/html';
   return new Response(fs.readFileSync(path.join(__dirname,'../ui',files[u.pathname])),{headers:{'Content-Type':type+'; charset=utf-8','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:"}});
  });
- win=new BrowserWindow({width:1320,height:880,minWidth:980,minHeight:680,title:'EDUPLINK 运营工作台',icon:path.join(__dirname,'../assets/icon.png'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
+ win=new BrowserWindow({show:false,width:1320,height:880,minWidth:980,minHeight:680,title:'EDUPLINK 运营工作台',icon:path.join(__dirname,'../assets/icon.png'),webPreferences:{preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true}});
  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate({about:()=>dialog.showMessageBox(win,{type:'info',title:'关于运营工作台',message:'EDUPLINK 运营工作台',detail:'版本 '+VERSION+'\n个人自用',buttons:['确定']})})));
  win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
  const trustedUrl=url=>{try{const u=new URL(url);return u.protocol==='edup:'&&u.host==='console';}catch{return false;}};
@@ -72,6 +73,7 @@ app.whenReady().then(async()=>{
    return data;
   }catch(e){logger.writeError('api_failed',e,{route,durationMs:Date.now()-start});throw e;}
  });}
+ const diagnosticsUpload=new DiagnosticsUpload({dir:userDir,logger,send:request,paired:()=>config.paired});diagnosticsUpload.start();app.on('before-quit',()=>diagnosticsUpload.close());
  ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(installing&&body!==undefined)throw Error('UPDATE_INSTALLING');if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
  ipcMain.handle('edup:ai',async(event,op,args)=>{checkSender(event);if(installing)throw Error('UPDATE_INSTALLING');return request('ai',validateAIRequest(op,args));});
  async function installUpdate(){
@@ -88,6 +90,8 @@ app.whenReady().then(async()=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
   if(action==='settings')return settings();
+  if(action==='log-upload-status')return diagnosticsUpload.status();
+  if(action==='upload-error-logs')return diagnosticsUpload.tick();
   if(action==='ziniao-settings')return {binding:config.ziniao?.[arg?.site]||null};
   if(action==='ziniao-save-binding'){
    const b=arg?.binding;if(!b||typeof b.name!=='string'||!b.name.trim()||b.name.length>80||b.confirmed!==true)throw Error('STORE_BINDING_NOT_VERIFIED');
@@ -110,6 +114,9 @@ app.whenReady().then(async()=>{
    try{await temp.init();return await temp.diagnose(targets[arg.target]);}finally{await temp.session.closeAllConnections();}
   }
 
+  if(action==='upload-material'){
+   const r=await dialog.showOpenDialog(win,{title:'为这个商品选择补充资料',properties:['openFile'],filters:[{name:'文字资料（不读取内嵌图片或公式）',extensions:['txt','csv','tsv','docx','xlsx']}]});if(r.canceled)return {cancelled:true};const file=r.filePaths[0];if(fs.statSync(file).size>512*1024)throw Error('MATERIAL_FILE_LIMIT_512KB');const bytes=fs.readFileSync(file),content=fileText(file);if(Buffer.byteLength(content)>64000)throw Error('MATERIAL_TEXT_LIMIT_64KB');return request('ai',validateAIRequest('batch_material_save',{jobId:arg.jobId,sku:arg.sku,label:path.basename(file),base64:bytes.toString('base64'),text:content}));
+  }
   if(action==='extract-codes')return extractCodes(arg?.text);
   if(action==='extract-document'){
    const r=await dialog.showOpenDialog(win,{title:'选择含商品编码的文件',properties:['openFile'],filters:[{name:'商品编码文档',extensions:['txt','csv','tsv','docx','xlsx']}]});
@@ -144,7 +151,7 @@ app.whenReady().then(async()=>{
   }
   throw Error('IPC_ACTION_INVALID');
  });
- win.webContents.once('did-finish-load',()=>{try{protectedState.confirmUi();appPatch?.healthy(VERSION);}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
+ win.webContents.once('did-finish-load',()=>{if(process.argv.includes('--background'))win.showInactive();else win.show();try{protectedState.confirmUi();appPatch?.healthy(VERSION);}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
  win.loadURL('edup://console/');logger.write('client_started',{version:VERSION});
  const interval=setInterval(()=>updateController.run({automatic:true}),6*60*60*1000);interval.unref();setTimeout(()=>updateController.run({automatic:true}),3000).unref();
 }).catch(e=>{logger?.writeError('startup_failed',e);if(appPatch?.fail('STARTUP_FAILED'))return;dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});
