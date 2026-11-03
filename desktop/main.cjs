@@ -90,6 +90,9 @@ app.whenReady().then(async()=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
   if(action==='settings')return settings();
+  if(action==='ai-view-get'){try{const state=JSON.parse(fs.readFileSync(path.join(userDir,'ai-view.json'),'utf8'));if(!state||!state.drafts||typeof state.drafts!=='object'||Array.isArray(state.drafts)||(state.thread!==null&&!/^[a-f0-9-]{36}$/.test(state.thread)))throw Error('AI_VIEW_INVALID');return state;}catch{return {thread:null,drafts:{}};}}
+  if(action==='ai-view-save'){if(!arg||!arg.drafts||typeof arg.drafts!=='object'||Array.isArray(arg.drafts)||(arg.thread!==null&&!/^[a-f0-9-]{36}$/.test(arg.thread)))throw Error('AI_VIEW_INVALID');const drafts={};for(const [key,value]of Object.entries(arg.drafts).slice(-20)){if((key==='_new'||/^[a-f0-9-]{36}$/.test(key))&&typeof value==='string'&&value.length<=12000)drafts[key]=value;}const dest=path.join(userDir,'ai-view.json'),tmp=dest+'.tmp';fs.writeFileSync(tmp,JSON.stringify({thread:arg.thread,drafts}),{mode:0o600});fs.renameSync(tmp,dest);return {saved:true};}
+
   if(action==='log-upload-status')return diagnosticsUpload.status();
   if(action==='upload-error-logs')return diagnosticsUpload.tick();
   if(action==='ziniao-settings')return {binding:config.ziniao?.[arg?.site]||null};
