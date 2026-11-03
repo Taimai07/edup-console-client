@@ -1,12 +1,12 @@
 import {renderWorkspace} from './workspace-v2.js';
-import {productEditor,gigaQueries} from './operations.js';
+import {productEditor,gigaQueries,businessCall} from './operations.js';
 import {renderMaintenance} from './maintenance.js';
 import {mountAI} from './ai-host.js';
 import {syncStatus,notify,message as feedback,friendlyError} from './notices.js';
 import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './analytics.js';
 const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','运营 AI','同步与维护'];
 let disposeAI=null;
-let data=null,current=0,site='ALL',offline=false,cacheWarning='',loadError=null,detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set();
+let data=null,current=0,site='ALL',offline=false,cacheWarning='',loadError=null,detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set(),gigaSite='US',listingSites=null;
 const api=async(route,body)=>{if(window.edup)return window.edup.request(route,body);const r=await fetch('/api/'+route,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()}:{},body:body?JSON.stringify(body):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;};
 tabs.forEach((t,i)=>{const b=el('button',t);b.onclick=()=>{current=i;detail=null;render();};document.querySelector('#nav').append(b);});
 async function load(){
@@ -17,12 +17,13 @@ async function load(){
 }
 function marketFilter(parent,allowAll=true){const select=el('select');const sites=[...new Set([...Object.keys(data.operating?.sites||{}),...Object.keys(data.operating?.traffic||{}),...data.products.map(p=>p.site)])].sort();for(const s of allowAll?['ALL',...sites]:sites){const o=el('option',s==='ALL'?'全部站点':(siteNames[s]||s)+' · '+s);o.value=s;select.append(o);}select.value=site;select.onchange=()=>{site=select.value;render();};parent.append(select);}
 function render(){
+ document.body.classList.toggle("ai-page",current===5);
  if(disposeAI){disposeAI();disposeAI=null;}
  document.querySelector('#title').textContent=detail?names[detail]+'趋势':tabs[current];[...document.querySelector('#nav').children].forEach((b,i)=>b.className=i===current?'active':'');
  const v=document.querySelector('#view');v.replaceChildren();v.classList.remove('workspace-v2');
  syncStatus(document.querySelector('#notice'),{data,offline,cacheWarning,error:loadError,onSettings:()=>{current=6;detail=null;render();},onRetry:load});
  if(current===6){renderMaintenance(v,{api,reload:load});return;}if(current===5){disposeAI=mountAI(v);return;}if(!data)return;
- const toolbar=el('div',undefined,'toolbar');if(![1,2,3].includes(current))marketFilter(toolbar);else if(current===3)toolbar.append(el('span','上架任务目标：美国站','tag'));v.append(toolbar);
+ const toolbar=el('div',undefined,'toolbar');if(![1,2,3].includes(current))marketFilter(toolbar);else if(current===3){const picker=el('select'),label=el('label','上架站点 ');picker.setAttribute('aria-label','上架站点');for(const row of listingSites?.sites||[]){const o=el('option',row.name);o.value=row.code;picker.append(o);}if(!picker.options.length){const o=el('option',listingSites?.checking?'正在检查可用站点…':'暂无已接通站点');o.value='';picker.append(o);}picker.disabled=offline||!listingSites?.sites?.length;picker.value=gigaSite;picker.onchange=()=>{gigaSite=picker.value;render();};label.append(picker);toolbar.append(label);if(!listingSites){businessCall('service_status').then(r=>{listingSites=r.listingSites||{sites:[]};if(!listingSites.sites.some(x=>x.code===gigaSite))gigaSite=listingSites.sites[0]?.code||'';if(current===3)render();}).catch(()=>{listingSites={sites:[]};if(current===3)render();});}}v.append(toolbar);
  if(detail){const back=el('button','返回经营总览');back.onclick=()=>{detail=null;render();};toolbar.append(back);renderDetail(v,detail);return;}
  if(current===0)overview(v);
  if(current===1)renderWorkspace(v,{data,mode:'products',offline,redraw:render,navigate:mode=>{current=mode==='products'?1:2;render();}});
@@ -82,9 +83,11 @@ function giga(v){
  if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；普通数字、日期和金额不会直接作为编码。');
  for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
  const count=el('p','已选择 '+selected.size+' 个');c.append(count);v.append(c); }
- const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline});v.append(operations);
+ const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline:offline||!gigaSite||!listingSites?.sites?.length,site:gigaSite});v.append(operations);
  v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
 document.querySelector('#refresh').onclick=load;load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);
 
 if(window.edup?.maintenance)window.edup.maintenance('settings').then(s=>{const label=document.querySelector('#client-version');if(label)label.textContent='个人自用 · v'+s.version;}).catch(()=>{});
+
+setInterval(async()=>{if(current!==3||document.hidden)return;try{const r=await businessCall('service_status'),next=r.listingSites||{sites:[]};if(JSON.stringify(next.sites)!==JSON.stringify(listingSites?.sites)){listingSites=next;if(!next.sites.some(x=>x.code===gigaSite))gigaSite=next.sites[0]?.code||'';render();}}catch{}},60000);
