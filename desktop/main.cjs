@@ -1,6 +1,6 @@
 const appPatch=globalThis[Symbol.for('edup.patch')];
 const {buildZiniaoRoute}=require('./ziniao.cjs');
-const {Network}=require('./network.cjs');
+const {Network,VPS_ORIGIN}=require('./network.cjs');
 const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu,session,net}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto');
 const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/protocol.cjs');
@@ -39,7 +39,7 @@ app.whenReady().then(async()=>{
  const id=deviceId(identity.publicKey);
  const network=new Network(session.fromPartition('persist:edup-network'),{settings:config.proxy||{mode:'system'},logger,requester:options=>net.request(options)});await network.init();
  const updates=new Updates({fetcher:network.fetch,version:VERSION,publicKey:appPatch?.publicKey||fs.readFileSync(path.join(__dirname,'../assets/update-public.pem'),'utf8'),patchStore:appPatch?.store,dir:path.join(userDir,'updates'),logger});
- function validateBase(value){const u=new URL(value);if(u.username||u.password||u.search||u.hash||u.pathname!=='/'|| !(u.protocol==='https:'||(process.env.EDUP_DEV==='1'&&u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname))))throw Error('HTTPS_SERVER_REQUIRED');return u.origin;}
+ function validateBase(value){const u=new URL(value);if(u.username||u.password||u.search||u.hash||u.pathname!=='/'||u.origin!==VPS_ORIGIN)throw Error('VPS_ENDPOINT_REQUIRED');return u.origin;}
  const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery,patch:appPatch?{bootstrapVersion:appPatch.baseVersion,lastResult:appPatch.store.lastResult()}:null,proxy:network.settings});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
@@ -104,7 +104,7 @@ app.whenReady().then(async()=>{
    await network.apply(arg);config.proxy=network.settings;saveConfig();return {settings:network.settings};
   }
   if(action==='test-proxy'){
-   const targets={server:'https://console.eduplinkaudio.com/updates/stable.json',github:'https://github.com/Taimai07/edup-console-client/releases'};
+   const targets={server:'https://console.eduplinkaudio.com/updates/v3/stable.json'};
    if(!targets[arg?.target])throw Error('PROXY_TEST_TARGET_INVALID');
    const temp=new Network(session.fromPartition('edup-proxy-test-'+crypto.randomUUID()),{settings:arg.settings,requester:options=>net.request(options)});
    try{await temp.init();return await temp.diagnose(targets[arg.target]);}finally{await temp.session.closeAllConnections();}

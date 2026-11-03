@@ -6,7 +6,7 @@ export async function renderMaintenance(view,{api,reload}){
  const box=card('设备配对与连接','每台电脑单独登记密钥，换网络仍可使用。配对码10分钟有效，只能使用一次。');view.append(box);
  if(!window.edup?.maintenance){box.append(el('p','开发网页不提供Windows设备配对，请使用桌面客户端。','muted'));return;}
  const call=(a,b)=>window.edup.maintenance(a,b),result=el('div',undefined,'result');let patchResult=null;
- const server=el('input');server.type='url';server.placeholder='https://console.eduplinkaudio.com';server.className='setting-input';
+ const server=el('input');server.type='url';server.readOnly=true;server.placeholder='https://console.eduplinkaudio.com';server.className='setting-input';
  const code=el('input');code.type='password';code.autocomplete='off';code.placeholder='一次性配对码';code.className='setting-input';
  const actions=el('div',undefined,'toolbar');
  function button(label,fn){const b=el('button',label);b.onclick=async()=>{b.disabled=true;try{const r=await fn();feedback(result,{level:'success',title:'操作已完成',message:typeof r==='string'?r:'设置已保存'});}catch(e){const m=friendlyError(e);feedback(result,m);notify(m);}finally{b.disabled=false;}};actions.append(b);}

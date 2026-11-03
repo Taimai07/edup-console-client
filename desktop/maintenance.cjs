@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),{createHash,randomBytes}=require('node:crypto');
 const {validateRelease,verifyDownload,trustedArtifact}=require('../shared/updates.cjs');
 const {applyDelta}=require('./delta.cjs');
-const allowed=new Set(['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com']);
+const allowed=new Set();
 async function boundedDownload(url,max=500*1024*1024,fetcher=(...args)=>fetch(...args)){
  let current=new URL(url);
  for(let n=0;n<6;n++){
