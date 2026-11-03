@@ -34,4 +34,3 @@ Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus c
 - docs/updates.md: signed full application patches, skipped versions and recovery.
 - docs/private-services.md: private deployment boundaries and acceptance sources.
 Update current intent/state in these documents after changes; do not append a diary.
-
