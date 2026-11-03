@@ -81,7 +81,8 @@ function giga(v){
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
  if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；普通数字、日期和金额不会直接作为编码。');
  for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
- const count=el('p','已选择 '+selected.size+' 个');c.append(count);gigaQueries(c,selected,{offline});v.append(c); }
+ const count=el('p','已选择 '+selected.size+' 个');c.append(count);v.append(c); }
+ const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline});v.append(operations);
  v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
 document.querySelector('#refresh').onclick=load;load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);
