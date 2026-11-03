@@ -22,6 +22,12 @@ jobs:
       - run: npm run prepare-assets
       - run: npm test
       - run: npm run build:win
+      - name: Verify signed application patches and rollback without an installer
+        run: |
+          node node_modules/electron/install.js
+          node test/patch-electron-smoke.cjs node_modules/electron/dist/electron.exe
+      - name: Build application-only patch artifact
+        run: node scripts/build-app-patch.cjs
       - name: Verify overwrite install and protected Windows storage on isolated runner
         shell: pwsh
         run: ./test/windows-upgrade.ps1
@@ -31,6 +37,9 @@ jobs:
           path: |
             dist/*.exe
             dist/windows-upgrade-receipt.json
+            dist/*.eduppatch
+            dist/*.eduppatch.json
+            dist/patch-electron-receipt.json
       - name: Publish new version without replacing existing releases
         shell: pwsh
         env:
@@ -40,5 +49,5 @@ jobs:
           gh release view "v$releaseVersion" *> $null
           if ($LASTEXITCODE -eq 0) { Write-Host 'Version exists; release assets are immutable.'; exit 0 }
           Get-FileHash "dist/EDUPLINK-Setup-$releaseVersion.exe" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  EDUPLINK-Setup-$releaseVersion.exe" } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
-          gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "自用版本 v$releaseVersion" --notes-file RELEASE-NOTES.md --prerelease
+          gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" "dist/EDUPLINK-App-$releaseVersion.eduppatch" "dist/EDUPLINK-App-$releaseVersion.eduppatch.json" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "自用版本 v$releaseVersion" --notes-file RELEASE-NOTES.md --prerelease
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

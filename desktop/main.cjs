@@ -1,3 +1,4 @@
+const appPatch=globalThis[Symbol.for('edup.patch')];
 const {buildZiniaoRoute}=require('./ziniao.cjs');
 const {Network}=require('./network.cjs');
 const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu,session,net}=require('electron');
@@ -15,15 +16,15 @@ let logger,win;
 const selfCheckIndex=process.argv.indexOf('--self-check');
 if(selfCheckIndex>=0){
  app.whenReady().then(()=>{
-  const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable()};
+  const result={version:VERSION,apiVersion:API_VERSION,packaged:app.isPackaged,userDataBasename:path.basename(app.getPath('userData')),windowsProtection:safeStorage.isEncryptionAvailable(),patchBootstrap:!!appPatch,bootstrapVersion:appPatch?.baseVersion||null};
   const text='EDUPLINK isolated self-check';result.protectionRoundtrip=safeStorage.decryptString(safeStorage.encryptString(text))===text;
   result.uiFiles=['index.html','app.js','analytics.js','maintenance.js','styles.css','ai.html','ai.js','ai.css','ai-host.js','notices.js','operations.js','network-settings.js','workspace-v2.js','workspace-v2.css','browser-settings.js'].every(n=>fs.existsSync(path.join(__dirname,'../ui',n)));
   const temp=fs.mkdtempSync(path.join(app.getPath('temp'),'edup-self-check-'));
   try{const s=new ProtectedState(temp,safeStorage);s.writeCache({products:[{sku:text}],markets:[]});fs.writeFileSync(path.join(temp,'connection.json'),'isolated');s.backup({version:VERSION,sha256:'0'.repeat(64)});result.protectedRecovery=s.inspectUpgrade(VERSION).dataPreserved&&s.readCache().products[0].sku===text&&!fs.readFileSync(s.cache).includes(Buffer.from(text));}
   finally{if(path.dirname(path.resolve(temp))!==path.resolve(app.getPath('temp')))throw Error('SELF_CHECK_PATH');fs.rmSync(temp,{recursive:true,force:true});}
-  result.ok=result.protectionRoundtrip&&result.uiFiles&&result.protectedRecovery;fs.writeFileSync(process.argv[selfCheckIndex+1],JSON.stringify(result));app.exit(result.ok?0:1);
+  result.ok=result.protectionRoundtrip&&result.uiFiles&&result.protectedRecovery;fs.writeFileSync(process.argv[selfCheckIndex+1],JSON.stringify(result));if(result.ok)appPatch?.healthy(VERSION);app.exit(result.ok?0:1);
  }).catch(()=>app.exit(1));
-}else if(!app.requestSingleInstanceLock()){app.quit();}else{
+}else if(!appPatch?.singleInstanceOwned&&!app.requestSingleInstanceLock()){app.quit();}else{
 app.on('second-instance',()=>{if(win){if(win.isMinimized())win.restore();win.focus();}});
 app.whenReady().then(async()=>{
  const userDir=app.getPath('userData');logger=new Logger(path.join(userDir,'logs'));
@@ -37,9 +38,9 @@ app.whenReady().then(async()=>{
  else{const pair=crypto.generateKeyPairSync('ed25519');identity={publicKey:pair.publicKey.export({type:'spki',format:'pem'}),privateKey:pair.privateKey.export({type:'pkcs8',format:'pem'})};saveIdentity();}
  const id=deviceId(identity.publicKey);
  const network=new Network(session.fromPartition('persist:edup-network'),{settings:config.proxy||{mode:'system'},logger,requester:options=>net.request(options)});await network.init();
- const updates=new Updates({fetcher:network.fetch,version:VERSION,publicKey:fs.readFileSync(path.join(__dirname,'../assets/update-public.pem'),'utf8'),dir:path.join(userDir,'updates'),logger});
+ const updates=new Updates({fetcher:network.fetch,version:VERSION,publicKey:appPatch?.publicKey||fs.readFileSync(path.join(__dirname,'../assets/update-public.pem'),'utf8'),patchStore:appPatch?.store,dir:path.join(userDir,'updates'),logger});
  function validateBase(value){const u=new URL(value);if(u.username||u.password||u.search||u.hash||u.pathname!=='/'|| !(u.protocol==='https:'||(process.env.EDUP_DEV==='1'&&u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname))))throw Error('HTTPS_SERVER_REQUIRED');return u.origin;}
- const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery,proxy:network.settings});
+ const settings=()=>({version:VERSION,apiVersion:API_VERSION,serverUrl:config.serverUrl,paired:config.paired,deviceId:id,recovery,patch:appPatch?{bootstrapVersion:appPatch.baseVersion,lastResult:appPatch.store.lastResult()}:null,proxy:network.settings});
  const saveConfig=()=>fs.writeFileSync(configFile,JSON.stringify(config,null,2));
  protocol.handle('edup',req=>{
   const u=new URL(req.url),files={'/':'index.html','/app.js':'app.js','/analytics.js':'analytics.js','/maintenance.js':'maintenance.js','/styles.css':'styles.css','/notices.js':'notices.js','/operations.js':'operations.js','/browser-settings.js':'browser-settings.js','/workspace-v2.css':'workspace-v2.css','/workspace-v2.js':'workspace-v2.js','/network-settings.js':'network-settings.js','/ai-host.js':'ai-host.js','/ai.html':'ai.html','/ai.js':'ai.js','/ai.css':'ai.css'};
@@ -76,10 +77,13 @@ app.whenReady().then(async()=>{
  async function installUpdate(){
   if(pairing)throw Error('PAIR_IN_PROGRESS');
   if(!app.isPackaged)throw Error('INSTALL_REQUIRES_PACKAGED_APP');
+  if(updates.state.updateKind==='patch'){
+   installing=true;try{const staged=updates.verifiedPatch();const backup=protectedState.backup(updates.manifest);logger.write('upgrade_backup',{count:backup.files});appPatch.store.activate(staged.id);logger.write('app_patch_restart',{version:updates.manifest.version});app.relaunch();app.quit();return {state:'restarting',updateKind:'patch'};}catch(e){installing=false;try{protectedState.cancelUpgrade();}catch{}throw e;}
+  }
   const file=updates.verifiedInstaller();
   installing=true;try{const backup=protectedState.backup(updates.manifest);logger.write('upgrade_backup',{count:backup.files});const error=await shell.openPath(file);if(error)throw Error('INSTALL_DISPATCH_FAILED');logger.write('update_installer_started');app.quit();return {state:'installing'};}catch(e){installing=false;try{protectedState.cancelUpgrade();}catch{}throw e;}
  }
- const updateController=new UpdateController({updates,canRun:()=>!pairing&&!installing,confirm:async s=>{const r=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:'发现新版本 '+s.version+'，是否下载并安装？',detail:'安装会关闭软件，请先保存未完成的编辑。配对和设置会保留。',buttons:['下载并安装','稍后再说'],defaultId:0,cancelId:1,noLink:true});return r.response===0;},install:installUpdate,progress:active=>{if(win&&!win.isDestroyed())win.setProgressBar(active?2:-1);},onError:async e=>{logger.write('update_flow_failed',{code:e.message});if(win&&!win.isDestroyed())await dialog.showMessageBox(win,{type:'warning',title:'更新未完成',message:'暂时无法完成更新，可以继续使用当前版本。',detail:'稍后可在“同步与维护”中重试。',buttons:['确定']});}});
+ const updateController=new UpdateController({updates,canRun:()=>!pairing&&!installing,confirm:async s=>{const r=await dialog.showMessageBox(win,{type:'question',title:'发现新版本',message:'发现新版本 '+s.version+(s.updateKind==='patch'?'，是否下载补丁并重启？':'，是否下载并安装？'),detail:s.updateKind==='patch'?'只更新应用程序，不运行安装器。重启前请保存编辑，配对和设置会保留。':'本次需要完整安装包。安装会关闭软件，请先保存编辑；配对和设置会保留。',buttons:[s.updateKind==='patch'?'更新并重启':'下载并安装','稍后再说'],defaultId:0,cancelId:1,noLink:true});return r.response===0;},install:installUpdate,progress:active=>{if(win&&!win.isDestroyed())win.setProgressBar(active?2:-1);},onError:async e=>{logger.write('update_flow_failed',{code:e.message});if(win&&!win.isDestroyed())await dialog.showMessageBox(win,{type:'warning',title:'更新未完成',message:'暂时无法完成更新，可以继续使用当前版本。',detail:'稍后可在“同步与维护”中重试。',buttons:['确定']});}});
  ipcMain.handle('edup:maintenance',async(event,action,arg)=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
@@ -140,11 +144,11 @@ app.whenReady().then(async()=>{
   }
   throw Error('IPC_ACTION_INVALID');
  });
- win.webContents.once('did-finish-load',()=>{try{protectedState.confirmUi();}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
+ win.webContents.once('did-finish-load',()=>{try{protectedState.confirmUi();appPatch?.healthy(VERSION);}catch(e){logger.write('upgrade_receipt_failed',{code:e.message});}});
  win.loadURL('edup://console/');logger.write('client_started',{version:VERSION});
  const interval=setInterval(()=>updateController.run({automatic:true}),6*60*60*1000);interval.unref();setTimeout(()=>updateController.run({automatic:true}),3000).unref();
-}).catch(e=>{logger?.writeError('startup_failed',e);dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});
+}).catch(e=>{logger?.writeError('startup_failed',e);if(appPatch?.fail('STARTUP_FAILED'))return;dialog.showErrorBox('EDUPLINK 启动失败','错误编号：'+e.message+'。请保留客户端日志以便诊断。');app.quit();});
 }
-process.on('uncaughtException',e=>{logger?.writeError('uncaught_exception',e);app.quit();});
+process.on('uncaughtException',e=>{logger?.writeError('uncaught_exception',e);if(!appPatch?.fail('UNCAUGHT_EXCEPTION'))app.quit();});
 process.on('unhandledRejection',e=>logger?.writeError('unhandled_rejection',e));
 app.on('window-all-closed',()=>app.quit());

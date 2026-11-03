@@ -1,12 +1,12 @@
 {
   "name": "edup-console-client",
   "productName": "EDUPLINK运营工作台",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "A paired Windows client for a privately hosted operations service",
   "author": "EDUPLINK",
   "private": true,
   "type": "module",
-  "main": "desktop/main.cjs",
+  "main": "desktop/bootstrap.cjs",
   "scripts": {
     "test": "node test/client.test.cjs",
     "prepare-assets": "node scripts/prepare-assets.cjs",

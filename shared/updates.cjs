@@ -1,7 +1,7 @@
 const {verify,createHash}=require('node:crypto');
 const {compareVersions}=require('./protocol.cjs');
 const UPDATE_ORIGIN='https://console.eduplinkaudio.com';
-function trustedArtifact(value){try{const u=new URL(value);return u.origin===UPDATE_ORIGIN&&!u.username&&!u.password&&!u.search&&!u.hash&&/^\/updates\/files\/(?:EDUPLINK-Setup-\d+\.\d+\.\d+\.exe|EDUPLINK-\d+\.\d+\.\d+-to-\d+\.\d+\.\d+\.edupdelta)$/.test(u.pathname);}catch{return false;}}
+function trustedArtifact(value){try{const u=new URL(value);return u.origin===UPDATE_ORIGIN&&!u.username&&!u.password&&!u.search&&!u.hash&&/^\/updates\/files\/(?:EDUPLINK-App-\d+\.\d+\.\d+\.eduppatch|EDUPLINK-Setup-\d+\.\d+\.\d+\.exe|EDUPLINK-\d+\.\d+\.\d+-to-\d+\.\d+\.\d+\.edupdelta)$/.test(u.pathname);}catch{return false;}}
 function validateRelease(envelope,{publicKey,currentVersion,apiVersion=1,allowedHosts=['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com']}={}){
  if(!publicKey)throw Error('UPDATE_TRUST_NOT_CONFIGURED');
  if(!envelope||typeof envelope.payload!=='string'||envelope.payload.length>32768||typeof envelope.signature!=='string')throw Error('UPDATE_MANIFEST_INVALID');
