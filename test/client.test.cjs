@@ -16,3 +16,4 @@ require('./logging-errors.test.cjs');
 require('./network.test.cjs');
 
 require('./ziniao.test.cjs');
+require('./delta.test.cjs');

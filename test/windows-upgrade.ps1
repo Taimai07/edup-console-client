@@ -22,6 +22,8 @@ foreach ($name in $names) {
 $new = (Resolve-Path "dist/EDUPLINK-Setup-$($pkg.version).exe").Path
 $p = Start-Process -FilePath $new -ArgumentList @('/S',"/D=$installDir") -WindowStyle Hidden -Wait -PassThru
 if ($p.ExitCode -ne 0) { throw 'New installer failed' }
+$cached = Join-Path $dataDir "updates/EDUPLINK-Setup-$($pkg.version).exe"
+if (!(Test-Path -LiteralPath $cached) -or (Get-FileHash -LiteralPath $cached).Hash -ne (Get-FileHash -LiteralPath $new).Hash) { throw 'Delta base installer cache mismatch' }
 foreach ($name in $names) {
   if ((Get-FileHash -LiteralPath (Join-Path $dataDir $name) -Algorithm SHA256).Hash -ne $before[$name]) { throw "User state changed: $name" }
 }
