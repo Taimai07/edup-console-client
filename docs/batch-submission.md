@@ -16,6 +16,8 @@ Accepted does not mean all product attributes, media or buyability are verified.
 An uncertain submission must be read back before another attempt, including after
 a service restart. Repeated clicks and reconnects must not duplicate publication.
 
+Current account/market publication receipts are merged across batches. Accepted or unresolved submissions take precedence over historical preparation failures and cannot re-enter new-listing preparation. Reports retain their original evidence and identify newer submission state; batch chat shows current status alongside historical answers.
+
 Root batch identity and the original product list remain stable. Child preparation
 results merge by product code. Status polling must preserve material input and
 ignore an old response after a history selection changes. Currency belongs in
