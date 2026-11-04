@@ -21,6 +21,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run prepare-assets
       - run: npm test
+      - run: node test/publication-status.test.cjs
       - run: npm run build:win
       - name: Verify signed application patches and rollback without an installer
         run: |
