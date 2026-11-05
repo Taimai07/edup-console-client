@@ -22,11 +22,14 @@ jobs:
       - run: npm run prepare-assets
       - run: npm test
       - run: node test/publication-status.test.cjs
+      - run: node test/continuation.test.cjs
       - run: npm run build:win
       - name: Verify signed application patches and rollback without an installer
         run: |
           node node_modules/electron/install.js
           node test/patch-electron-smoke.cjs node_modules/electron/dist/electron.exe
+      - name: Verify saved-batch continuation and material editing without user data
+        run: node test/run-native-continuation.cjs
       - name: Build application-only patch artifact
         run: node scripts/build-app-patch.cjs
       - name: Verify overwrite install and protected Windows storage on isolated runner
@@ -41,6 +44,7 @@ jobs:
             dist/*.eduppatch
             dist/*.eduppatch.json
             dist/patch-electron-receipt.json
+            dist/native-continuation-receipt.json
       - name: Publish new version without replacing existing releases
         shell: pwsh
         env:

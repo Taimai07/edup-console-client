@@ -2,7 +2,7 @@
 
 Maintainer: Codex, primary project maintainer.
 Claude and other collaborators propose annotated changes; maintainer merges them.
-Unresolved review comments: none recorded.
+Unresolved review comments: the independent review findings for saved-batch recovery have been addressed with targeted regression checks.
 
 ## Purpose and structure
 Personal Windows operations client. The desktop presents business data and approved
@@ -26,6 +26,10 @@ Do not interpret an HTML load event or file existence as a working renderer.
 User data, device identity and logs must survive updates and rollback.
 Clients contact the configured private service; no seller/model credentials in UI.
 Actual selling changes require the existing bound confirmation flow.
+Existing batches can continue from their saved product list without retyping codes.
+Effective reviewed results are reusable; changed facts and current validation remain explicit.
+A failed retry preserves prior results and shows the latest attempt separately.
+The submission action cannot silently start paid preparation.
 Only US listing execution has passed acceptance; do not silently route other sites.
 Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus control.
 
@@ -35,3 +39,4 @@ Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus c
 - docs/private-services.md: private deployment boundaries and acceptance sources.
 - docs/batch-submission.md: fixed batch selection, asynchronous submission and per-item results.
 Update current intent/state in these documents after changes; do not append a diary.
+
