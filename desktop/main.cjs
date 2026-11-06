@@ -3,7 +3,7 @@ const {DiagnosticsUpload}=require('./diagnostics-upload.cjs');
 const appPatch=globalThis[Symbol.for('edup.patch')];
 const {buildZiniaoRoute}=require('./ziniao.cjs');
 const {Network,VPS_ORIGIN}=require('./network.cjs');
-const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu,session,net}=require('electron');
+const {app,BrowserWindow,protocol,ipcMain,safeStorage,dialog,shell,Menu,session,net,clipboard}=require('electron');
 const path=require('node:path'),fs=require('node:fs'),crypto=require('node:crypto');
 const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/protocol.cjs');
 const {Logger}=require('../shared/logging.cjs');
@@ -89,6 +89,8 @@ app.whenReady().then(async()=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
   if(action==='giga-browser-status')return gigaBrowser.status();
+  if(action==='giga-browser-folder'){try{return {directory:gigaBrowser.folder()};}catch{return {directory:null};}}
+  if(action==='giga-browser-copy-folder'){clipboard.writeText(gigaBrowser.folder());return {copied:true};}
   if(action==='giga-browser-start')return gigaBrowser.start(arg);
   if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
   if(action==='settings')return settings();

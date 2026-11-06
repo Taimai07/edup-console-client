@@ -21,6 +21,8 @@ ipcMain.handle('fixture:business',(_event,op,args)=>{
   throw Error('UNEXPECTED_BUSINESS_CALL');
 });
 ipcMain.handle('fixture:browser',(_event,op,args)=>{
+  if(op==='giga-browser-folder')return {directory:'fixture-only-extension-folder'};
+  if(op==='giga-browser-copy-folder')return {copied:true};
   if(op==='giga-browser-start'){
     put('heartbeat.json',{at:Date.now()/1000});
     const task=bridge.start(args);scope=task;
@@ -46,6 +48,8 @@ app.whenReady().then(async()=>{
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='读取云仓详情、报价和库存').click()");
   await wait("[...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
   if(calls.some(x=>x.op==='giga_query'))throw Error('BUSINESS_BEFORE_MANUAL_CONFIRMATION');
+  if(!await run("document.body.textContent.includes('首次安装、更新和连接教程')&&document.body.textContent.includes('chrome://extensions/')&&document.body.textContent.includes('加载已解压的扩展程序')"))throw Error('INSTALL_GUIDE_MISSING');
+  receipt.installationGuidePresent=true;
   receipt.waitsForManualAccount=true;
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='取消本次操作').click()");
   await wait("![...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");

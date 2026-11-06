@@ -16,6 +16,7 @@ class GigaBrowser {
       if (manifest.name !== 'com.eduplink.giga_browser') throw Error();
       const location = JSON.parse(fs.readFileSync(path.join(path.dirname(manifest.path), 'bridge-state.json'), 'utf8'));
       if (location.format !== 'edup-giga-bridge-v1' || !path.isAbsolute(location.directory)) throw Error();
+      this.extensionDirectory = location.extensionDirectory;
       this.directory = location.directory; return this.directory;
     } catch { throw Error('GIGA_BROWSER_SETUP_REQUIRED'); }
   }
@@ -38,6 +39,12 @@ class GigaBrowser {
       return {connected: age >= -5 && age < 10 && !!inspection, inspection: inspection || null,
         extensionProtocol: connection?.extensionProtocol || 0};
     } catch { return {connected: false, code: 'GIGA_BROWSER_SETUP_REQUIRED'}; }
+  }
+  folder() {
+    this.root();
+    if (!this.extensionDirectory || !path.isAbsolute(this.extensionDirectory) ||
+      !fs.existsSync(path.join(this.extensionDirectory, 'manifest.json'))) throw Error('GIGA_BROWSER_SETUP_REQUIRED');
+    return this.extensionDirectory;
   }
   validate({site, codes}) {
     if (!REGIONS[site]) throw Error('GIGA_REGION_MAPPING_NOT_VERIFIED');
