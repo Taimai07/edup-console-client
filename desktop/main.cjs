@@ -13,6 +13,8 @@ const {extractCodes,fileText}=require('./import.cjs');
 const {UpdateController}=require('./update-controller.cjs');
 const {template:menuTemplate}=require('./menu.cjs');
 const {validateAIRequest}=require('../shared/ai-contract.cjs');
+const {GigaBrowser}=require('./giga-browser.cjs');
+const gigaBrowser=new GigaBrowser();
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 let logger,win;
 const selfCheckIndex=process.argv.indexOf('--self-check');
@@ -86,6 +88,9 @@ app.whenReady().then(async()=>{
  ipcMain.handle('edup:maintenance',async(event,action,arg)=>{
   checkSender(event);
   if(installing)throw Error('UPDATE_INSTALLING');
+  if(action==='giga-browser-status')return gigaBrowser.status();
+  if(action==='giga-browser-start')return gigaBrowser.start(arg);
+  if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
   if(action==='settings')return settings();
   if(action==='ai-view-get'){try{const state=JSON.parse(fs.readFileSync(path.join(userDir,'ai-view.json'),'utf8'));if(!state||!state.drafts||typeof state.drafts!=='object'||Array.isArray(state.drafts)||(state.thread!==null&&!/^[a-f0-9-]{36}$/.test(state.thread)))throw Error('AI_VIEW_INVALID');return state;}catch{return {thread:null,drafts:{}};}}
   if(action==='ai-view-save'){if(!arg||!arg.drafts||typeof arg.drafts!=='object'||Array.isArray(arg.drafts)||(arg.thread!==null&&!/^[a-f0-9-]{36}$/.test(arg.thread)))throw Error('AI_VIEW_INVALID');const drafts={};for(const [key,value]of Object.entries(arg.drafts).slice(-20)){if((key==='_new'||/^[a-f0-9-]{36}$/.test(key))&&typeof value==='string'&&value.length<=12000)drafts[key]=value;}const dest=path.join(userDir,'ai-view.json'),tmp=dest+'.tmp';fs.writeFileSync(tmp,JSON.stringify({thread:arg.thread,drafts}),{mode:0o600});fs.renameSync(tmp,dest);return {saved:true};}

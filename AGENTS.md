@@ -34,9 +34,9 @@ Only US listing execution has passed acceptance; do not silently route other sit
 Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus control.
 
 ## Read when relevant
+- docs/giga-browser.md: region-account check and favorites before new product intake.
 - docs/client.md: renderer loading, IPC, health and submission availability.
 - docs/updates.md: signed full application patches, skipped versions and recovery.
 - docs/private-services.md: private deployment boundaries and acceptance sources.
 - docs/batch-submission.md: fixed batch selection, asynchronous submission and per-item results.
 Update current intent/state in these documents after changes; do not append a diary.
-

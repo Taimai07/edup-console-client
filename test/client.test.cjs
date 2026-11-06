@@ -19,3 +19,6 @@ require('./network.test.cjs');
 require('./ziniao.test.cjs');
 require('./delta.test.cjs');
 require('./patch-store.test.cjs');
+
+require('./giga-browser.test.cjs');
+require('./giga-browser-core.test.cjs');

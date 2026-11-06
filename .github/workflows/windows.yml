@@ -30,6 +30,8 @@ jobs:
           node test/patch-electron-smoke.cjs node_modules/electron/dist/electron.exe
       - name: Verify saved-batch continuation and material editing without user data
         run: node test/run-native-continuation.cjs
+      - name: Verify GIGA browser pre-step without user data or supplier writes
+        run: node test/run-native-giga-browser.cjs
       - name: Build application-only patch artifact
         run: node scripts/build-app-patch.cjs
       - name: Verify overwrite install and protected Windows storage on isolated runner
@@ -45,6 +47,7 @@ jobs:
             dist/*.eduppatch.json
             dist/patch-electron-receipt.json
             dist/native-continuation-receipt.json
+            dist/native-giga-browser-receipt.json
       - name: Publish new version without replacing existing releases
         shell: pwsh
         env:
