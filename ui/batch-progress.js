@@ -4,6 +4,19 @@ export function issueDetails(item={}){
  const code=item.reason||item.failure?.code||'',details=item.failure?.details||{},attention=item.attention||[],out=[];let matched=false;
  const add=(key,title,why,next,needsInput)=>{matched=true;if(!out.some(x=>x.key===key))out.push({key,title,why,next,needsInput});};
  if(details.reason==='plan_usage_paused')add('service','模型服务暂停，本步骤未执行',details.upstreamDispatched===false?'调用服务返回暂停状态；回执确认这次请求没有发给上游模型。':'调用服务返回暂停状态，尚未取得可用结果；结果不明时不会自动重复请求。','这是服务侧事项，不需要补商品资料。服务恢复后点击“继续检查本批”。',false);
+ const imageCodes=['IMAGE_SOURCE_SIZE'];
+ if(imageCodes.includes(code))add('image-transfer','图片处理未完成','供应商原图触发程序的大小或编码保护；这不是平台已禁止上架。','由后台保留原图并生成符合要求的发布副本；无需重新提供编码或已有原图。',false);
+ if(['IMAGE_SOURCE_RESOURCE_LIMIT','IMAGE_PUBLICATION_ENCODING_REQUIRED','IMAGE_COLOR_PROFILE_REVIEW_REQUIRED'].includes(code))add('image-maintenance','这张图片暂时无法自动处理','原图超出当前处理资源或自动编码/色彩转换未通过；原始资料会保留。','需要维护者核对原图与处理日志，不能靠重复续检解决；无需补商品事实。',false);
+ if(['IMAGE_SOURCE_TIMEOUT','IMAGE_SOURCE_UNAVAILABLE','IMAGE_SOURCE_EMPTY','IMAGE_SOURCE_INCOMPLETE'].includes(code))add('image-network','读取供应商图片失败','图片服务器响应超时、暂不可达或返回空内容，尚未取得完整图片。','保留本批结果，连接恢复后只继续未完成步骤，不重新提供商品事实。',false);
+ if(['DOCUMENT_PAGE_STILL_UNREADABLE','DOCUMENT_MODEL_CONTRACT_INVALID','DOCUMENT_MODEL_QUOTE_INVALID'].includes(code))add('document-model','说明书已交模型处理，仍需核对','备用读取未获得可确认的完整结果，原件、错误和调用回执均保留。','维护者核对具体页码和回执后处理；不重复上传或盲目重发同一模型请求。',false);
+ if(code==='DOCUMENT_SIZE')add('document-size','说明书下载大小检查未通过','这是程序读取设置或下载完整性问题，不是亚马逊已拒绝该商品。','在原批次继续检查，由新程序流式处理原件并按页读取，不需要重传已有资料。',false);
+ if(['DOCUMENT_TEXT_REVIEW_REQUIRED','DOCUMENT_OCR_REVIEW_REQUIRED','DOCUMENT_VISUAL_REVIEW_REQUIRED','DOCUMENT_NATIVE_PARSE_FAILED'].includes(code))add('document-reader','说明书的文字或图形页尚未完成读取','原件可能是图片型、矢量绘图，或文字解析器不兼容；不等于资料不存在。','继续检查时由程序读取原件，必要时转GPT分页识别并保留不确定区域与回执。',false);
+ if(['DOCUMENT_SOURCE_UNAVAILABLE','DOCUMENT_DOWNLOAD_TIMEOUT','DOCUMENT_SOURCE_INCOMPLETE','DOCUMENT_SOURCE_EMPTY'].includes(code))add('document-download','读取供应商说明书失败','说明书下载未完成，已有错误和兼容性记录会保留。','先核对供应商文件可用性及后台诊断；不需要补商品事实，也不重复发起未知结果的模型请求。',false);
+ if(code==='FACT_SOURCE_REF_INVALID'||code==='DOCUMENT_REF_INVALID')add('reference','模型引用的资料位置无法核对','引用路径没有对应到可验证的原始字段或具体文档页；这是来源解析问题。','维护者核对已保存模型结果与原件，修复引用兼容性；无需重新输入编码或重复上传。',false);
+ if(code==='DOCUMENT_CLAIMS_NEED_REVIEW')add('document-claims','说明书引用的事实仍需复核','已对照原页，但当前声明仍有无法确认或不一致之处。','先修正有问题的声明；无法辨认的内容不能猜成商品事实，已有原件和回执保留。',false);
+ if(code==='PLANNER_INPUT_INVALID'||code==='PLANNER_REQUEST_BODY_TOO_LARGE')add('request-size','模型请求尚未发送','程序生成的请求格式或大小未通过本地校验，本次没有发给模型。','维护者调整分段或上下文整理；无需补商品事实，也不把这次当成未知付费调用重试。',false);
+ if(code==='DOCUMENT_TEXT_TIMEOUT')add('document-timeout','说明书解析超时','已保存的说明书未在时限内完成解析，不能当作商品缺少资料。','由后台核对已保存文件和解析日志后继续；不要求你重复上传已有资料。',false);
+ if(code==='TimeoutExpired')add('process-timeout','准备子程序执行超时','原记录只确认子程序超时，没有记录足以核实的具体原因。','由后台核对该步骤的原始日志和调用回执；不要求补商品事实，也不盲目重发模型请求。',false);
  for(const [index,row] of attention.entries()){matched=false;const field=typeof row==='object'?row.field||row.id||'':'',text=typeof row==='string'?row:row.reason||field;
   if(field==='country_of_origin'||/country.of.origin|manufacturing country/i.test(text))add('origin','制造国家尚未核实','当前准备报告没有找到可用的制造国家，不能用仓库或卖家所在国家代替。','填写制造国家，并注明供应商说明、铭牌或其他依据。',true);
   if(field==='fabric_type'||/fabric.type|fabric composition/i.test(text))add('fabric','平台要求的“面料信息”尚未处理','商品是镜柜时，这可能是类目字段适用值的问题；当前报告尚未核实。','先由程序核对该字段及“不适用”等实际允许值，不需要你编造面料成分。',false);
@@ -25,7 +38,7 @@ export function issueDetails(item={}){
  return out;
 }
 export function continuation(job){const items=job?.result?.pipeline?.items||[],blocked=new Set([...items.filter(x=>['ALREADY_SUBMITTED','PUBLICATION_PENDING'].includes(x.state)).map(x=>x.sku),...(job?.submissions||[]).flatMap(x=>x.items||[]).filter(x=>['queued','checking','submitting','accepted','verified','needs_reconciliation'].includes(x.state)).map(x=>x.sku)]);return {rootId:job?.rootJobId||job?.id,codes:[...new Set([...(job?.codes||[]),...(job?.result?.products||[]).map(x=>x.code)])].filter(x=>!blocked.has(x)),running:active.has(job?.state)};}
-const phaseNames={PRODUCT_TYPE_DISCOVERY:'查询商品类目',facts:'核对商品事实和图片',field_selection:'选择商品字段',attributes:'整理类目字段',required_fields:'检查必填字段',review:'复核图片与文案',repair:'修正复核问题',FACTS_PREPARING:'核对商品事实和图片',FIELDS_PREPARING:'整理类目字段',COPY_GENERATING:'生成商品文案',SEMANTIC_REVIEW:'复核图片与文案',PREPARING:'准备上架资料'};
+const phaseNames={DOCUMENT_READING:'读取商品说明书',DOCUMENT_MODEL_READING:'GPT正在识别说明书页面',document:'GPT正在识别说明书页面',document_context:'整理说明书证据',document_review:'核对说明书引用',copy:'GPT正在生成商品文案',PRODUCT_TYPE_DISCOVERY:'查询商品类目',facts:'核对商品事实和图片',field_selection:'选择商品字段',attributes:'整理类目字段',required_fields:'检查必填字段',review:'复核图片与文案',repair:'修正复核问题',FACTS_PREPARING:'核对商品事实和图片',FIELDS_PREPARING:'整理类目字段',COPY_GENERATING:'生成商品文案',SEMANTIC_REVIEW:'复核图片与文案',PREPARING:'准备上架资料'};
 export function itemIssue(item={},mode='ai_workflow'){const problems=issueDetails(item),code=item.reason||item.failure?.code||'',stage=phaseNames[item.failure?.stage||item.failedStage]||'AI准备',attention=(item.attention||[]).map(x=>typeof x==='string'?x:x.field==='batteries_included'?'是否随附电池尚未确认':x.field||'商品事实待确认');
  if(item.state==='ALREADY_SUBMITTED')return {level:'info',title:item.publication?.result?.platformReviewPending?'已提交，等待亚马逊审核':'已提交亚马逊',reason:'已有正式提交记录。旧准备报告保留，不代表需要重新上架。',next:'查看亚马逊审核、图片及目录结果；不要重新创建。',ready:false,needsInput:false,submitted:true};
  if(item.state==='PUBLICATION_PENDING')return {level:'info',title:'已有提交任务，等待核对',reason:'已有排队、处理或待核对记录，暂不接受重复提交。',next:'等待原任务完成或核对原提交结果。',ready:false,needsInput:false,submitted:true};

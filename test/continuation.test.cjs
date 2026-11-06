@@ -14,3 +14,9 @@ console.log('Saved-batch continuation and actionable error tests passed');
 
 const vague=ctx.itemIssue({state:'NEEDS_SOURCE_REVIEW',reason:'DG_REVIEW_REQUIRED'});assert.equal(vague.needsInput,false);assert.match(vague.title,/危险品声明/);
 const previous=ctx.itemIssue({state:'PREVIEW_VALID',latestAttempt:{state:'failed'}});assert.equal(previous.ready,false);assert.match(previous.title,/原准备结果已保留/);
+
+for(const code of ['IMAGE_SOURCE_SIZE','IMAGE_SOURCE_RESOURCE_LIMIT','IMAGE_SOURCE_TIMEOUT','IMAGE_COLOR_PROFILE_REVIEW_REQUIRED','DOCUMENT_TEXT_TIMEOUT','TimeoutExpired']){
+ const issue=ctx.itemIssue({state:'PREPARATION_EXCEPTION',reason:code});assert.equal(issue.needsInput,false);assert.ok(issue.problems.length);
+}
+const notices=fs.readFileSync(path.join(__dirname,'../ui/notices.js'),'utf8').replace(/export /g,'');const nctx={};vm.createContext(nctx);vm.runInContext(notices,nctx);
+const unknown=nctx.friendlyError({message:'OPERATIONS_TIMEOUT_CHECK_STATUS OUTCOME_UNKNOWN'});assert.equal(unknown.outcome,'unknown');assert.match(unknown.message,/不要重复/);
