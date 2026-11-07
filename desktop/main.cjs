@@ -9,7 +9,7 @@ const {VERSION,API_VERSION,deviceId,pairMessage,signRequest}=require('../shared/
 const {Logger}=require('../shared/logging.cjs');
 const {Updates}=require('./maintenance.cjs');
 const {ProtectedState}=require('./state.cjs');
-const {extractCodes,fileText}=require('./import.cjs');
+const {extractCodes,fileText,importCodes}=require('./import.cjs');
 const {UpdateController}=require('./update-controller.cjs');
 const {template:menuTemplate}=require('./menu.cjs');
 const {validateAIRequest}=require('../shared/ai-contract.cjs');
@@ -127,7 +127,7 @@ app.whenReady().then(async()=>{
   if(action==='extract-codes')return extractCodes(arg?.text);
   if(action==='extract-document'){
    const r=await dialog.showOpenDialog(win,{title:'选择含商品编码的文件',properties:['openFile'],filters:[{name:'商品编码文档',extensions:['txt','csv','tsv','docx','xlsx']}]});
-   if(r.canceled)return {canceled:true};return {...extractCodes(fileText(r.filePaths[0])),filename:path.basename(r.filePaths[0])};
+   if(r.canceled)return {canceled:true};return {...await importCodes(r.filePaths[0]),filename:path.basename(r.filePaths[0])};
   }
   if(action==='read-cache')return protectedState.readCache();
   if(action==='write-cache')return protectedState.writeCache(arg);

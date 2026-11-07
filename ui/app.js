@@ -79,7 +79,20 @@ function reports(v){
 function giga(v){
  const box=card('批量识别云仓商品编码','可以粘贴带说明的整段文字，或选择TXT、CSV、TSV、DOCX、XLSX。先提取、去重和核对，再创建任务。'),input=el('textarea');input.placeholder='例如：商品编码：W1234P567890，另一个是 W9999S00001';input.value=gigaText;input.oninput=()=>gigaText=input.value;
  const tools=el('div',undefined,'toolbar'),extract=el('button','识别文字中的编码'),file=el('button','从文档识别'),result=el('div');extract.onclick=async()=>{try{extraction=window.edup?.maintenance?await window.edup.maintenance('extract-codes',{text:gigaText}):(()=>{const matches=(gigaText.match(/[A-Z]\d{2,8}[PS]\d{3,12}/gi)||[]).map(x=>x.toUpperCase()),codes=[...new Set(matches)];return {items:codes.map(code=>({code,reason:'编码格式',occurrences:matches.filter(x=>x===code).length})),duplicates:matches.length-codes.length};})();selected=new Set(extraction.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
- file.disabled=!window.edup?.maintenance;file.onclick=async()=>{try{const r=await window.edup.maintenance('extract-document');if(r.canceled)return;extraction=r;selected=new Set(r.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
+ file.disabled=!window.edup?.maintenance;
+ file.onclick=async()=>{
+  file.disabled=true;
+  extract.disabled=true;
+  result.textContent='正在本机识别文档中的编码…';
+  try{
+   const r=await window.edup.maintenance('extract-document');
+   if(r.canceled){result.textContent='';return;}
+   extraction=r;
+   selected=new Set(r.items.map(x=>x.code));
+   render();
+  }catch(e){result.textContent=e.message;}
+  finally{file.disabled=false;extract.disabled=false;}
+ };
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
  if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；普通数字、日期和金额不会直接作为编码。');
  for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
