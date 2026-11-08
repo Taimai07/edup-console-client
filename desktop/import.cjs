@@ -2,44 +2,9 @@ const fs=require('node:fs'),zlib=require('node:zlib');
 const {Worker, isMainThread, parentPort, workerData} = require('node:worker_threads');
 const MiB = 1024 * 1024;
 const materialLimits = {file: 10 * MiB, entry: 4 * MiB, expanded: 12 * MiB, entries: 1000};
-const skuLimits = {file: 128 * MiB, entry: 64 * MiB, expanded: 128 * MiB, entries: 65535};
+const skuLimits = {file: 128 * MiB, entry: 64 * MiB, expanded: 128 * MiB, entries: 65535, cachedFormulaText: true};
 const decodeXml=s=>s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_,x)=>String.fromCodePoint(x[0].toLowerCase()==='x'?parseInt(x.slice(1),16):Number(x))).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
-function extractCodes(text, maxLength = 2 * MiB){
- if(typeof text!=='string'||text.length>maxLength)throw Error('TEXT_TOO_LARGE');const found=new Map();let matches=0;
- const add=(raw,index,reason)=>{if(!/\d/.test(raw))return;const code=raw.replace(/[.,;，。；]+$/,'').toUpperCase();matches++;const old=found.get(code);if(old){old.occurrences++;return;}if(found.size>=500)throw Error('TOO_MANY_CODES');found.set(code,{code,reason,occurrences:1,index});};
- // Known GIGA item formats, including the verified W1234P567890 and W9999S00001 families.
- for(const m of text.matchAll(/(?<![A-Za-z0-9])[A-Z]\d{2,8}[PS]\d{3,12}(?![A-Za-z0-9])/gi))add(m[0],m.index,'编码格式');
- for(const m of text.matchAll(/\b[WB]\d{7,14}\b/gi))add(m[0],m.index,'数字编码候选，请核对');
- for(const m of text.matchAll(/(?:\bSKU\b|\bitem\s*code\b|\bcode\b|产品编码|商品编码|大健编码)\s*[:：=#]\s*([A-Za-z0-9][A-Za-z0-9_.-]{2,127})/gi)){
-  const x=m[1].replace(/[.,;，。；]+$/,'');if(!found.has(x.toUpperCase()))add(x,m.index,'带编码标签');
- }
- // Keep the original rule priority without splitting the entire document into an array.
- let start = 0;
- while (start < text.length) {
-  const newline = text.indexOf('\n', start);
-  const end = newline === -1 ? text.length : newline;
-  const trimmed = text.slice(start, end).trim();
-  let last = trimmed.length;
-  while (last && '.,;，。；'.includes(trimmed[last - 1])) last--;
-  const candidate = last <= 41 ? trimmed.slice(0, last) : '';
-  if (/^[A-Za-z][A-Za-z0-9_.-]{2,40}$/.test(candidate) &&
-      /\d/.test(candidate) && !found.has(candidate.toUpperCase())) {
-   add(candidate, start, '独立编码行，请确认');
-  }
-  start = end + 1;
- }
- let line = 1;
- let newline = text.indexOf('\n');
- for (const item of [...found.values()].sort((left, right) => left.index - right.index)) {
-  while (newline !== -1 && newline < item.index) {
-   line++;
-   newline = text.indexOf('\n', newline + 1);
-  }
-  item.line = line;
-  delete item.index;
- }
- return {items:[...found.values()],unique:found.size,duplicates:matches-found.size,method:'规则提取',note:'未匹配部分不代表没有编码；提交前核对所选编码'};
-}
+const {extractCodes} = require('../ui/sku-rules.js');
 function zipXml(bytes, limits){
  let e=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(bytes.readUInt32LE(i)===0x06054b50){e=i;break;}
  if(e<0)throw Error('DOCUMENT_ZIP_INVALID');const count=bytes.readUInt16LE(e+10);let at=bytes.readUInt32LE(e+16),total=0,out={};
@@ -53,10 +18,34 @@ function zipXml(bytes, limits){
   if(offset+30>bytes.length||bytes.readUInt32LE(offset)!==0x04034b50)throw Error('DOCUMENT_ZIP_INVALID');const begin=offset+30+bytes.readUInt16LE(offset+26)+bytes.readUInt16LE(offset+28);if(begin+compressed>bytes.length)throw Error('DOCUMENT_ZIP_INVALID');
   const raw=bytes.subarray(begin,begin+compressed),plain=method===8?zlib.inflateRawSync(raw,{maxOutputLength:limits.entry}):raw;if(plain.length!==size)throw Error('DOCUMENT_ZIP_INVALID');out[name]=plain.toString('utf8');
  }
- const plain=x=>decodeXml(x.replace(/<\/(?:w:p|si|c|row)>/g,'\n').replace(/<w:tab\b[^>]*\/>/g,'\t').replace(/<[^>]+>/g,''));
- if(out['word/document.xml'])return plain(out['word/document.xml']);
- const strings=[...(out['xl/sharedStrings.xml']||'').matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g)].map(m=>plain(m[1]));const cells=[];
- for(const [name,xml]of Object.entries(out)){if(!name.startsWith('xl/worksheets/'))continue;for(const m of xml.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)){if(/<f\b/.test(m[2]))continue;const value=m[2].match(/<v\b[^>]*>([\s\S]*?)<\/v>/)?.[1];if(/\bt=["']s["']/.test(m[1]))cells.push(strings[Number(value)]||'');else cells.push(plain(m[2]));}}
+ const plain = xml => decodeXml(xml
+  .replace(/<\/(?:w:p|w:tc|si|c|row)>/g, '\n')
+  .replace(/<w:(?:br|cr)\b[^>]*\/>/g, '\n')
+  .replace(/<w:tab\b[^>]*\/>/g, '\t')
+  .replace(/<[^>]+>/g, ''));
+ if (out['word/document.xml']) return plain(out['word/document.xml']);
+ const strings = Array.from(
+  (out['xl/sharedStrings.xml'] || '').matchAll(/<(?:[\w.-]+:)?si\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?si\s*>/g),
+  match => plain(match[1]));
+ const cells = [];
+ for (const [name, xml] of Object.entries(out)) {
+  if (!name.startsWith('xl/worksheets/')) continue;
+  for (const match of xml.matchAll(/<(?:[\w.-]+:)?c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/(?:[\w.-]+:)?c\s*>)/g)) {
+   const [, attributes, body] = match;
+   if (body === undefined) continue;
+   const type = attributes.match(/(?:^|\s)t=(?:"([^"]*)"|'([^']*)')/);
+   const cellType = type?.[1] ?? type?.[2];
+   const value = body.match(/<(?:[\w.-]+:)?v\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?v\s*>/)?.[1];
+   if (/<(?:[\w.-]+:)?f\b/.test(body)) {
+    if (limits.cachedFormulaText && value !== undefined && cellType === 'str') cells.push(decodeXml(value));
+    else if (limits.cachedFormulaText && value !== undefined && cellType === 's') cells.push(strings[Number(value)] || '');
+   } else if (cellType === 's') {
+    cells.push(strings[Number(value)] || '');
+   } else {
+    cells.push(plain(body));
+   }
+  }
+ }
  return cells.join('\n');
 }
 function fileText(file, limits = materialLimits) {

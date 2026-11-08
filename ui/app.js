@@ -1,3 +1,4 @@
+import {extractCodes} from './sku-rules.js';
 import {renderWorkspace} from './workspace-v2.js';
 import {productEditor,gigaQueries,businessCall} from './operations.js';
 import {renderMaintenance} from './maintenance.js';
@@ -77,8 +78,8 @@ function reports(v){
  if(report==='compliance'){v.append(card('年度合规固定费用','人民币 '+number(data.compliance.annual_total)+' 元／年。属于经营固定费用，按用户提供的年度清单；不放在首页当作当天经营指标。'));return;}
 }
 function giga(v){
- const box=card('批量识别云仓商品编码','可以粘贴带说明的整段文字，或选择TXT、CSV、TSV、DOCX、XLSX。先提取、去重和核对，再创建任务。'),input=el('textarea');input.placeholder='例如：商品编码：W1234P567890，另一个是 W9999S00001';input.value=gigaText;input.oninput=()=>gigaText=input.value;
- const tools=el('div',undefined,'toolbar'),extract=el('button','识别文字中的编码'),file=el('button','从文档识别'),result=el('div');extract.onclick=async()=>{try{extraction=window.edup?.maintenance?await window.edup.maintenance('extract-codes',{text:gigaText}):(()=>{const matches=(gigaText.match(/[A-Z]\d{2,8}[PS]\d{3,12}/gi)||[]).map(x=>x.toUpperCase()),codes=[...new Set(matches)];return {items:codes.map(code=>({code,reason:'编码格式',occurrences:matches.filter(x=>x===code).length})),duplicates:matches.length-codes.length};})();selected=new Set(extraction.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
+ const box=card('批量识别云仓商品编码','可以粘贴带说明的整段文字，或选择TXT、CSV、TSV、DOCX、XLSX。自动匹配以 W 开头的云仓编码，如 W123P456789、W1234P567890、W9999S00001。核对后再创建任务。'),input=el('textarea');input.placeholder='例如：商品编码：W1234P567890，另一个是 W9999S00001';input.value=gigaText;input.oninput=()=>gigaText=input.value;
+ const tools=el('div',undefined,'toolbar'),extract=el('button','识别文字中的编码'),file=el('button','从文档识别'),result=el('div');extract.onclick=async()=>{try{extraction=window.edup?.maintenance?await window.edup.maintenance('extract-codes',{text:gigaText}):extractCodes(gigaText);selected=new Set(extraction.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
  file.disabled=!window.edup?.maintenance;
  file.onclick=async()=>{
   file.disabled=true;
@@ -94,7 +95,7 @@ function giga(v){
   finally{file.disabled=false;extract.disabled=false;}
  };
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
- if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；普通数字、日期和金额不会直接作为编码。');
+ if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；结果按文档中首次出现的顺序排列。');
  for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
  const count=el('p','已选择 '+selected.size+' 个');c.append(count);v.append(c); }
  const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline,site:gigaSite,siteAvailable:!!gigaSite&&!!listingSites?.sites?.some(x=>x.code===gigaSite),siteChecking:!listingSites||!!listingSites.checking});v.append(operations);
