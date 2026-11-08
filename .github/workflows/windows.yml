@@ -20,6 +20,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run prepare-assets
+      - run: node -e "if (require('./package.json').version !== require('./shared/protocol.cjs').VERSION) process.exit(1)"
       - run: npm test
       - run: node test/publication-status.test.cjs
       - run: node test/continuation.test.cjs
@@ -63,4 +64,3 @@ jobs:
           Get-FileHash "dist/EDUPLINK-Setup-$releaseVersion.exe" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  EDUPLINK-Setup-$releaseVersion.exe" } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
           gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" "dist/EDUPLINK-App-$releaseVersion.eduppatch" "dist/EDUPLINK-App-$releaseVersion.eduppatch.json" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "自用版本 v$releaseVersion" --notes-file RELEASE-NOTES.md --prerelease
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
