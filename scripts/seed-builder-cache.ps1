@@ -7,6 +7,7 @@ if ([string]::IsNullOrWhiteSpace($cache) -or ![IO.Path]::IsPathFullyQualified($c
     throw 'Builder cache must be an absolute directory.'
 }
 $assets = @(
+    @{Release='7zip@1.0.0'; Name='7zip-win-x64.tar.gz'; Id=437402797; Sha='be071f15bd6da2f78fe81c6ddef2009b0c4d8a51f36b780cb806c7e6df95e1b3'},
     @{Release='winCodeSign-2.6.0'; Id=18435274; Sha='cdaec7154dda7cc31f88d886e2489379a0625a737d610b5ae7f62a12f16743a4'},
     @{Release='nsis-3.0.4.1'; Id=16428442; Sha='9877df902530f96357d13a7a31ae2b9df67f48b11ffc9a1700a7c961574ec5fa'},
     @{Release='nsis-resources-3.4.1'; Id=13752602; Sha='593a9a92ef958321293ac6a2ee61e64bf1bd543142a5bd6b3d310709cc924103'}
@@ -14,7 +15,8 @@ $assets = @(
 foreach ($asset in $assets) {
     $directory = Join-Path $cache $asset.Release
     New-Item -ItemType Directory -Force -Path $directory | Out-Null
-    $target = Join-Path $directory ($asset.Release + '.7z')
+    $name = if ($asset.Name) { $asset.Name } else { $asset.Release + '.7z' }
+    $target = Join-Path $directory $name
     $partial = $target + '.download'
     $url = 'https://api.github.com/repos/electron-userland/electron-builder-binaries/releases/assets/' + $asset.Id + '?download=1'
     Invoke-WebRequest -Uri $url -Headers @{Accept='application/octet-stream'} -UserAgent 'EDUPLINK-build' -OutFile $partial -TimeoutSec 60
@@ -27,3 +29,4 @@ foreach ($asset in $assets) {
 if ($env:GITHUB_ENV) {
     Add-Content -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Value ('ELECTRON_BUILDER_CACHE=' + $cache)
 }
+
