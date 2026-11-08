@@ -8,16 +8,22 @@ const {GigaBrowser}=require('../desktop/giga-browser.cjs'),bridge=new GigaBrowse
 const put=(name,v)=>fs.writeFileSync(path.join(root,name),JSON.stringify(v));
 put('connection.json',{extensionProtocol:4,inspection:{loggedIn:true,buyer:true,countryId:223,countryCode:'USA'}});
 put('heartbeat.json',{at:Date.now()/1000});
-const calls=[];let scope=null;
+const calls=[], segments=[], jobs=new Map();let scope=null;
 ipcMain.handle('fixture:business',(_event,op,args)=>{
   require('../shared/ai-contract.cjs').validateAIRequest(op,args);calls.push({op,args});
   if(op==='batch_chat_list')return {batches:[]};
   if(op==='giga_query'){
     if(!scope||args.site!==scope.site||JSON.stringify(args.codes)!==JSON.stringify(scope.codes))throw Error('FROZEN_SCOPE_LOST');
     if(bridge.task(scope.id).state!=='verified')throw Error('PIPELINE_STARTED_BEFORE_RECEIPT');
+    jobs.set(args.requestId,{codes:args.codes,completed:false});
     return {id:args.requestId,rootJobId:args.requestId,state:'queued'};
   }
-  if(op==='giga_job')return {id:args.id,rootJobId:args.id,codes:['WTEST1'],state:'queued',result:{products:[]}};
+  if(op==='giga_job'){
+    const job=jobs.get(args.id);
+    if(!job)throw Error('UNEXPECTED_JOB_ID');
+    job.completed=true;
+    return {id:args.id,rootJobId:args.id,codes:job.codes,state:'completed',result:{products:[]}};
+  }
   throw Error('UNEXPECTED_BUSINESS_CALL');
 });
 ipcMain.handle('fixture:browser',(_event,op,args)=>{
@@ -25,6 +31,8 @@ ipcMain.handle('fixture:browser',(_event,op,args)=>{
   if(op==='giga-browser-copy-folder')return {copied:true};
   if(op==='giga-browser-start'){
     put('heartbeat.json',{at:Date.now()/1000});
+    if([...jobs.values()].some(job=>!job.completed))throw Error('OVERLAPPING_SEGMENTS');
+    segments.push(args.codes);
     const task=bridge.start(args);
     setTimeout(()=>put(task.id+'.result.json',{result:{state:'DETAIL_RATES_READ',taskId:task.id,countryId:223,countryCode:'USA',amazonSubmitted:false,
       items:task.codes.map((sku,i)=>({sku,productId:String(i+1),state:i===0?'RATE_LOW':'RATE_HIGH'}))}}),250);
@@ -35,10 +43,10 @@ ipcMain.handle('fixture:browser',(_event,op,args)=>{
     const rates=bridge.task(args.id);
     if(rates.state!=='rates_read')throw Error('RATES_NOT_READ');
     const screen=bridge.startApproved(rates,{id:'12345678-1234-4123-8123-123456789abc',
-      approved:{WTEST1:'1'},excluded:[{sku:'WTEST2',state:'RETURN_RATE_NOT_LOW'}]});
+      approved:{[rates.codes[0]]:'1'},excluded:rates.codes.slice(1).map(sku=>({sku,state:'RETURN_RATE_NOT_LOW'}))});
     scope=screen.task;
     setTimeout(()=>put(scope.id+'.result.json',{result:{state:'APPROVED_FAVORITES_VERIFIED',taskId:scope.id,countryId:223,countryCode:'USA',amazonSubmitted:false,
-      items:[{sku:'WTEST1',productId:'1',state:'DETAIL_LOW_ALREADY_SAVED'}]}}),250);
+      items:[{sku:rates.codes[0],productId:'1',state:'DETAIL_LOW_ALREADY_SAVED'}]}}),250);
     return screen;
   }
   throw Error('UNEXPECTED_BROWSER_CALL');
@@ -53,7 +61,7 @@ app.whenReady().then(async()=>{
   await win.loadURL('edup://console/');
   const run=code=>win.webContents.executeJavaScript(code);
   const wait=async code=>{for(let n=0;n<100;n++){if(await run(code))return;await new Promise(r=>setTimeout(r,100));}throw Error('UI_WAIT_FAILED:'+code);};
-  await run("window.selection=new Set(['WTEST1','WTEST2']);import('edup://console/operations.js').then(m=>m.gigaQueries(document.querySelector('#view'),window.selection,{site:'US',siteAvailable:true}))");
+  await run("window.selection=new Set(Array.from({length:21},(_,i)=>'WTEST'+(i+1)));import('edup://console/operations.js').then(m=>m.gigaQueries(document.querySelector('#view'),window.selection,{site:'US',siteAvailable:true}))");
   await wait("[...document.querySelectorAll('button')].some(b=>b.textContent==='读取云仓详情、报价和库存'&&!b.disabled)");
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='读取云仓详情、报价和库存').click()");
   await wait("[...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
@@ -68,9 +76,10 @@ app.whenReady().then(async()=>{
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='读取云仓详情、报价和库存').click()");
   await wait("[...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
   await run("window.selection.clear();window.selection.add('OTHER_CODE');[...document.querySelectorAll('button')].find(b=>b.textContent==='已打开，检查并继续').click()");
-  for(let n=0;n<100&&!calls.some(x=>x.op==='giga_query');n++)await new Promise(r=>setTimeout(r,100));
-  const query=calls.find(x=>x.op==='giga_query');
-  if(!query||query.args.codes.join(',')!=='WTEST1'||query.args.site!=='US')throw Error('FROZEN_SCOPE_CHANGED');
-  receipt.frozenScopePreserved=true;receipt.completeReceiptRequired=true;receipt.nativeProtocol=true;receipt.passed=true;
+  for(let n=0;n<350&&!(jobs.size===2&&[...jobs.values()].every(job=>job.completed));n++)await new Promise(r=>setTimeout(r,100));
+  const queries=calls.filter(x=>x.op==='giga_query');
+  if(queries.length!==2||queries.some(x=>x.args.site!=='US')||queries.flatMap(x=>x.args.codes).join(',')!=='WTEST1,WTEST21')throw Error('FROZEN_SCOPE_CHANGED');
+  if(segments.map(codes=>codes.length).join(',')!=='20,1')throw Error('SEGMENTS_NOT_SEQUENTIAL');
+  receipt.sequentialSegments=true;receipt.frozenScopePreserved=true;receipt.completeReceiptRequired=true;receipt.nativeProtocol=true;receipt.passed=true;
   clearTimeout(limit);save();win.destroy();app.exit(0);
 }).catch(error=>{clearTimeout(limit);receipt.error=error.message;save();app.exit(1)});
