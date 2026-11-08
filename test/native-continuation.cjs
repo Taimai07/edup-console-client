@@ -19,7 +19,9 @@ ipcMain.handle('fixture:call',async(_e,op,args)=>{calls.push({op,args});
 let reuseReady=false, readScope;
 ipcMain.handle('fixture:browser',(_e,op,args)=>{
  if(op==='giga-browser-reuse'){
-  if(!reuseReady)return {receipts:[],missing:args.codes};
+  if(!reuseReady)return {receipts:[],missing:args.codes,missingDetails:args.codes.map((sku,index)=>({
+    sku,reason:index===0?'RATE_MEDIUM':'RATE_UNVERIFIED'
+  }))};
   return {missing:[],receipts:[{codes:args.codes,site:args.site,screenId:id,excluded:[],
     items:args.codes.map((sku,i)=>({sku,productId:String(i+1),state:'DETAIL_LOW_ALREADY_SAVED'}))}]};
  }
@@ -59,6 +61,8 @@ app.whenReady().then(async()=>{
  for(let i=0;i<50&&!calls.some(x=>x.op==='batch_chat_send');i++)await new Promise(r=>setTimeout(r,100));
  await run("document.querySelector('dialog').close();[...document.querySelectorAll('button')].find(x=>x.textContent==='继续检查本批（复用已有结果）').click()");
  await wait("document.body.textContent.includes('请先读取待核验商品的云仓资料')");
+ if(!await run("document.body.textContent.includes('退货率为「中」')&&document.body.textContent.includes('未能核实详情页退货率')"))
+  throw Error('FAVORITE_HOLD_REASONS_MISSING');
  if(resumed||await run("[...document.querySelectorAll('button')].some(x=>x.textContent==='已打开，检查并继续')"))
   throw Error('RESUME_MISSING_EVIDENCE_OPENED_BROWSER_PROMPT');
  await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='读取并核验这 2 款').click()");

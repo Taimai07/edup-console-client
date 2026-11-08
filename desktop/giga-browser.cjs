@@ -67,12 +67,15 @@ class GigaBrowser {
       throw Error('GIGA_CODES_INVALID');
     const missing = new Set(codes);
     const receipts = [];
+    const reasons = new Map();
+    const result = () => ({receipts, missing: [...missing],
+      missingDetails: [...missing].map(sku => ({sku, reason: reasons.get(sku) || 'NO_FAVORITE_EVIDENCE'}))});
     const connection=this.read('connection.json'), inspection=connection?.inspection;
     const [countryId,countryCode]=REGIONS[site];
     if (!Number.isFinite(connection?.connectedAt) || connection.extensionProtocol !== 4 ||
         inspection?.loggedIn !== true || inspection?.buyer !== true ||
         inspection.countryId !== countryId || inspection.countryCode !== countryCode)
-      return {receipts,missing:[...missing]};
+      return result();
     const names = fs.readdirSync(this.root()).filter(name => /^[a-f0-9-]{36}\.client-task\.json$/.test(name));
     const tasks = names.flatMap(name => {
       try {
@@ -91,20 +94,33 @@ class GigaBrowser {
       // A newer read, mismatch or unfinished favorite must never revive older evidence.
       for(const sku of candidates)seen.add(sku);
       const issued=task.expiresAt-1800, age=this.now()-issued;
-      // The server issues its one-hour approval before the favorite task is created.
-      if (task.op!=='favorites'||!/^[a-f0-9-]{36}$/.test(task.screenId||'')||
-          issued<connection.connectedAt||age<0||age>=3300) continue;
       let receipt;
-      try { receipt = this.task(task.id); }
-      catch (_) { continue; }
-      if (receipt.state !== 'verified') continue;
+      try {
+        // Historical read receipts explain a hold. Admission still uses task() and its freshness checks.
+        const saved = this.read(task.id + '.result.json');
+        if (saved) receipt = this.productReceipt(task, saved.result);
+      } catch (_) { /* an invalid receipt cannot supply a result */ }
+      if (task.op === 'read_rates') {
+        for (const row of receipt?.items || []) if (candidates.has(row.sku)) reasons.set(row.sku, row.state);
+        continue;
+      }
+      if (receipt?.state !== 'verified' || !/^[a-f0-9-]{36}$/.test(task.screenId||'')) {
+        for (const sku of candidates) reasons.set(sku, 'FAVORITE_NOT_VERIFIED');
+        continue;
+      }
+      // The server issues its one-hour approval before the favorite task is created.
+      if (issued < connection.connectedAt || age < 0 || age >= 3300) {
+        const reason = issued < connection.connectedAt ? 'FAVORITE_CONNECTION_CHANGED' : 'FAVORITE_EXPIRED';
+        for (const sku of candidates) reasons.set(sku, reason);
+        continue;
+      }
       const items = receipt.items.filter(row => candidates.has(row.sku));
       if (!items.length) continue;
       const matched = items.map(row => row.sku);
       for (const sku of matched) missing.delete(sku);
       receipts.push({site, screenId: receipt.screenId, codes: matched, items, excluded: []});
     }
-    return {receipts, missing: [...missing]};
+    return result();
   }
   startApproved(evidence, screen) {
     const approved = screen?.approved;
@@ -215,9 +231,12 @@ class GigaBrowser {
       if (saved) return this.storeReceipt(task, saved.result);
     }
     if (!saved) return {id, state: this.read(id + '.dispatch.json') ? 'running_in_browser' : 'waiting_for_browser'};
-    const result = saved.result, [countryId, countryCode] = REGIONS[task.site];
+    if (task.op === 'read_rates' && task.expiresAt < this.now()) return {id, state:'stopped', code:'TASK_EXPIRED'};
+    return this.productReceipt(task, saved.result);
+  }
+  productReceipt(task, result) {
+    const {id} = task, [countryId, countryCode] = REGIONS[task.site];
     const read = task.op === 'read_rates';
-    if (read && task.expiresAt < this.now()) return {id, state:'stopped', code:'TASK_EXPIRED'};
     if (result?.state !== (read ? 'DETAIL_RATES_READ' : 'APPROVED_FAVORITES_VERIFIED'))
       return {id, state: 'stopped', code: result?.code || 'GIGA_FAVORITES_NOT_VERIFIED'};
     const rows = result.items;

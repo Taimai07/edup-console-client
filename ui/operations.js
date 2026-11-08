@@ -1,6 +1,6 @@
 import './human-report.js';
 
-import {ensureGigaFavorites} from './giga-browser.js';
+import {ensureGigaFavorites,favoriteEvidenceText} from './giga-browser.js';
 
 import {materialEditor} from './materials.js';
 
@@ -112,7 +112,7 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
    const result=await ensureGigaFavorites(progress,{site,codes:batchCodes,reuse:op==='giga_prepare'},async(receipt,part)=>{
     for(const row of receipt.excluded)screenExcluded.add(row.sku);
     if(receipt.excluded.length)screeningResults.append(table(['商品编码','详情退货率筛选'],receipt.excluded.map(row=>[
-      row.sku,row.state==='RETURN_RATE_NOT_LOW'?'退货率不符合低或 N/A，排除':'详情页退货率无法核实，暂停'
+      row.sku,favoriteEvidenceText(row.rate||row.state)
     ])));
     if(reverifyOnly||!receipt.codes.length)return;
     const requestId=crypto.randomUUID();
@@ -174,9 +174,11 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
    const verificationRequired=result.verificationRequired||result.error?.verificationRequired;
    if(verificationRequired?.length){
     const hold=el('section',undefined,'operation-preview');
+    const details=new Map((result.verificationDetails||[]).map(row=>[row.sku,row.reason]));
+    const defaultReason=result.error?.verificationRequired?'SERVER_RECHECK':'NO_FAVORITE_EVIDENCE';
     hold.append(el('h3','请先读取待核验商品的云仓资料'),
-     el('p','以下 '+verificationRequired.length+' 款的收藏回执已过期或不可用。可以直接读取并核验这几款，原批次和已有商品资料会保留。'),
-     el('pre',verificationRequired.join('\n')),
+     el('p','以下 '+verificationRequired.length+' 款暂时无法进入本次准备。详情页明确显示「低」或 N/A 的商品通过退货率筛选，详情未核实的商品会暂停。'),
+     table(['商品编码','暂停或排除原因'],verificationRequired.map(sku=>[sku,favoriteEvidenceText(details.get(sku)||defaultReason)])),
      button('读取并核验这 '+verificationRequired.length+' 款',()=>start('giga_reverify',verificationRequired)));
     screeningResults.append(hold);
     if((admitted||pendingJob)&&target.isConnected){starting=false;await refresh();}

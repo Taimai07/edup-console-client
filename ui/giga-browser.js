@@ -2,6 +2,21 @@ import {el} from './analytics.js';
 const names = {US:'美国', DE:'德国', GB:'英国', CA:'加拿大', JP:'日本'};
 const batchSize = 20;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const evidenceText = {
+  RATE_MEDIUM: '上次详情页显示退货率为「中」，按当前规则排除。',
+  RATE_HIGH: '上次详情页显示退货率为「高」，按当前规则排除。',
+  RATE_UNVERIFIED: '上次未能核实详情页退货率，本款暂停，可重新读取核对。',
+  RATE_LOW: '上次详情页显示「低」，仍需核对收藏回执。',
+  RATE_NA: '上次详情页明确显示 N/A，仍需核对收藏回执。',
+  FAVORITE_CONNECTION_CHANGED: '已换浏览器连接，需用当前买家会话重新核验。',
+  FAVORITE_EXPIRED: '已有收藏回执已过有效期，需重新核验。',
+  FAVORITE_NOT_VERIFIED: '收藏结果尚未核实，需重新核对。',
+  RETURN_RATE_NOT_LOW: '退货率未达到当前筛选条件，本款已排除。',
+  RETURN_RATE_UNVERIFIED: '详情页退货率未能核实，本款暂停。',
+  SERVER_RECHECK: '服务器要求重新核验这款的收藏回执。'
+};
+export const favoriteEvidenceText = reason => Object.hasOwn(evidenceText, reason)
+  ? evidenceText[reason] : '未找到可用的收藏回执或退货率记录。';
 const messages = {
   GIGA_BROWSER_SETUP_REQUIRED:'尚未安装本机浏览器连接组件，请先完成设置。',
   GIGA_BROWSER_NOT_CONNECTED:'尚未连接，请在大健网页的扩展中点击“连接此大健页”。',
@@ -18,7 +33,8 @@ async function checkFavorites(task, active, update) {
     if (!active()) break;
     if (receipt.state === 'rates_read') {
       const screening = await window.edup.maintenance('giga-browser-screen', {id: task.id});
-      excluded = screening.excluded;
+      const rates = new Map(receipt.items.map(row => [row.sku, row.state]));
+      excluded = screening.excluded.map(row => ({...row, rate: rates.get(row.sku)}));
       if (!screening.task) return {codes: [], excluded};
       task = screening.task;
       deadline = Date.now() + 30 * 60 * 1000;
@@ -46,7 +62,7 @@ export async function ensureGigaFavorites(target, input, admit) {
   // Preparation may use verified evidence. Only the explicit read action can
   // open the region and favorite confirmation.
   if (input.reuse && pending.length) {
-    return {processed: 0, remaining: scope.codes, verificationRequired: pending};
+    return {processed: 0, remaining: scope.codes, verificationRequired: pending, verificationDetails: saved?.missingDetails};
   }
   for (let offset = 0; offset < pending.length; offset += batchSize) {
     segments.push({codes: pending.slice(offset, offset + batchSize)});

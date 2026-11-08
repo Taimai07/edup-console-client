@@ -61,6 +61,22 @@ test('unverified country mapping and duplicate codes cannot dispatch', t => {
   assert.throws(() => bridge.start({site: 'FR', codes: ['WTEST1']}), /MAPPING_NOT_VERIFIED/);
   assert.throws(() => bridge.start({site: 'DE', codes: ['WTEST1', 'WTEST1']}), /CODES_INVALID/);
 });
+test('a verified historical read explains the rate without enabling preparation', t => {
+  const {put,bridge}=setup(t,223,'USA');
+  const id='12345678-1234-4123-8123-123456789abc';
+  const codes=['WTEST1','WTEST2','WTEST3','WTEST4'];
+  put(id+'.client-task.json',{id,op:'read_rates',site:'US',skus:codes.slice(0,3),expiresAt:900});
+  put(id+'.result.json',{result:{taskId:id,state:'DETAIL_RATES_READ',countryId:223,countryCode:'USA',amazonSubmitted:false,
+    items:['RATE_MEDIUM','RATE_UNVERIFIED','RATE_NA'].map((state,i)=>({sku:codes[i],productId:String(i+1),state}))}});
+  assert.equal(bridge.task(id).code,'TASK_EXPIRED');
+  const result=bridge.reusableFavorites({site:'US',codes});
+  assert.deepEqual(result.receipts,[]);
+  assert.deepEqual(result.missing,codes);
+  assert.deepEqual(result.missingDetails.map(row=>row.reason),['RATE_MEDIUM','RATE_UNVERIFIED','RATE_NA','NO_FAVORITE_EVIDENCE']);
+  put(id+'.result.json',{result:{taskId:id,state:'DETAIL_RATES_READ',countryId:81,countryCode:'DEU',amazonSubmitted:false,
+    items:codes.slice(0,3).map((sku,i)=>({sku,productId:String(i+1),state:'RATE_MEDIUM'}))}});
+  assert(bridge.reusableFavorites({site:'US',codes}).missingDetails.every(row=>row.reason==='NO_FAVORITE_EVIDENCE'));
+});
 test('stale connection is not a usable login', t => {
   const {bridge, put} = setup(t); put('heartbeat.json', {at: 900});
   assert.throws(() => bridge.start({site: 'DE', codes: ['WTEST1']}), /NOT_CONNECTED/);
