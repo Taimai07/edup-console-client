@@ -55,6 +55,52 @@ class GigaBrowser {
   start(input) {
     return this.createTask(input, 'read_rates');
   }
+  reusableFavorites({site, codes}) {
+    if (!REGIONS[site] || !Array.isArray(codes) || !codes.length ||
+        new Set(codes).size !== codes.length ||
+        codes.some(sku => typeof sku !== 'string' || !/^[A-Z0-9][A-Z0-9_.-]{2,39}$/.test(sku)))
+      throw Error('GIGA_CODES_INVALID');
+    const missing = new Set(codes);
+    const receipts = [];
+    const connection=this.read('connection.json'), inspection=connection?.inspection;
+    const [countryId,countryCode]=REGIONS[site];
+    if (!Number.isFinite(connection?.connectedAt) || connection.extensionProtocol !== 4 ||
+        inspection?.loggedIn !== true || inspection?.buyer !== true ||
+        inspection.countryId !== countryId || inspection.countryCode !== countryCode)
+      return {receipts,missing:[...missing]};
+    const names = fs.readdirSync(this.root()).filter(name => /^[a-f0-9-]{36}\.client-task\.json$/.test(name));
+    const tasks = names.flatMap(name => {
+      try {
+        const task = this.read(name);
+        if (task && ['favorites','read_rates'].includes(task.op) && task.site === site &&
+            name === task.id + '.client-task.json' &&
+            Array.isArray(task.skus) && Number.isFinite(task.expiresAt)) return [task];
+      } catch (_) { /* unreadable evidence needs fresh verification */ }
+      return [];
+    }).sort((left,right) => right.expiresAt-left.expiresAt);
+    const seen=new Set();
+    for (const task of tasks) {
+      if (!missing.size) break;
+      const candidates=new Set(task.skus.filter(sku=>missing.has(sku)&&!seen.has(sku)));
+      if (!candidates.size) continue;
+      // A newer read, mismatch or unfinished favorite must never revive older evidence.
+      for(const sku of candidates)seen.add(sku);
+      const issued=task.expiresAt-1800, age=this.now()-issued;
+      // The server issues its one-hour approval before the favorite task is created.
+      if (task.op!=='favorites'||!/^[a-f0-9-]{36}$/.test(task.screenId||'')||
+          issued<connection.connectedAt||age<0||age>=3300) continue;
+      let receipt;
+      try { receipt = this.task(task.id); }
+      catch (_) { continue; }
+      if (receipt.state !== 'verified') continue;
+      const items = receipt.items.filter(row => candidates.has(row.sku));
+      if (!items.length) continue;
+      const matched = items.map(row => row.sku);
+      for (const sku of matched) missing.delete(sku);
+      receipts.push({site, screenId: receipt.screenId, codes: matched, items, excluded: []});
+    }
+    return {receipts, missing: [...missing]};
+  }
   startApproved(evidence, screen) {
     const approved = screen?.approved;
     if (!approved || typeof approved !== 'object' || Array.isArray(approved) ||
@@ -96,7 +142,7 @@ class GigaBrowser {
     if (result?.state !== (read ? 'DETAIL_RATES_READ' : 'APPROVED_FAVORITES_VERIFIED'))
       return {id, state: 'stopped', code: result?.code || 'GIGA_FAVORITES_NOT_VERIFIED'};
     const rows = result.items;
-    const states = read ? ['RATE_LOW','RATE_MEDIUM','RATE_HIGH','RATE_UNVERIFIED']
+    const states = read ? ['RATE_LOW','RATE_NA','RATE_MEDIUM','RATE_HIGH','RATE_UNVERIFIED']
       : ['DETAIL_LOW_ADDED','DETAIL_LOW_ALREADY_SAVED','DETAIL_LOW_RECONCILED'];
     if (result.taskId !== id || result.countryId !== countryId || result.countryCode !== countryCode || result.amazonSubmitted !== false ||
       !Array.isArray(rows) || rows.length !== task.skus.length ||

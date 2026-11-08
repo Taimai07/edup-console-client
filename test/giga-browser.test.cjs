@@ -5,7 +5,7 @@ function setup(t, countryId = 81, countryCode = 'DEU') {
   const dir = fs.mkdtempSync(path.join(__dirname, 'giga-integration-'));
   t.after(() => { assert.equal(path.dirname(dir), __dirname); fs.rmSync(dir, {recursive: true, force: true}); });
   const put = (name, value) => fs.writeFileSync(path.join(dir, name), JSON.stringify(value));
-  put('connection.json', {extensionProtocol: 4, inspection: {loggedIn: true, buyer: true, countryId, countryCode}});
+  put('connection.json', {connectedAt: 999, extensionProtocol: 4, inspection: {loggedIn: true, buyer: true, countryId, countryCode}});
   put('heartbeat.json', {at: 1000});
   const bridge = new GigaBrowser({directory: dir, now: () => 1000});
   return {dir, put, bridge};
@@ -30,6 +30,31 @@ test('wrong browser region cannot dispatch a favorite task', t => {
   const {bridge, dir} = setup(t);
   assert.throws(() => bridge.start({site: 'US', codes: ['WTEST1']}), /REGION_MISMATCH/);
   assert.equal(fs.existsSync(path.join(dir, 'request.json')), false);
+});
+test('preparation can reuse a fresh verified favorite subset without an active browser', t => {
+  const {put,bridge}=setup(t,223,'USA');
+  const id='12345678-1234-4123-8123-123456789abc';
+  const screenId='98765432-9876-4987-8987-987654321abc';
+  put(id+'.client-task.json',{id,op:'favorites',site:'US',skus:['WTEST1','WTEST2'],
+    approved:{WTEST1:'1',WTEST2:'2'},screenId,expiresAt:2800});
+  put(id+'.result.json',{result:{taskId:id,state:'APPROVED_FAVORITES_VERIFIED',countryId:223,
+    countryCode:'USA',amazonSubmitted:false,items:[
+      {sku:'WTEST1',productId:'1',state:'DETAIL_LOW_ALREADY_SAVED'},
+      {sku:'WTEST2',productId:'2',state:'DETAIL_LOW_ADDED'},
+    ]}});
+  put('heartbeat.json',{at:900});
+  const result=bridge.reusableFavorites({site:'US',codes:['WTEST2','WTEST3']});
+  assert.deepEqual(result.missing,['WTEST3']);
+  assert.deepEqual(result.receipts.map(r=>[r.screenId,r.codes]),[[screenId,['WTEST2']]]);
+  assert.deepEqual(bridge.reusableFavorites({site:'DE',codes:['WTEST2']}).receipts,[]);
+  const newer='ab345678-1234-4123-8123-123456789abc';
+  put(newer+'.client-task.json',{id:newer,op:'read_rates',site:'US',skus:['WTEST1'],expiresAt:2801});
+  assert.deepEqual(bridge.reusableFavorites({site:'US',codes:['WTEST1']}).missing,['WTEST1']);
+  put('connection.json',{connectedAt:1001,extensionProtocol:4,inspection:{loggedIn:true,buyer:true,countryId:223,countryCode:'USA'}});
+  assert.deepEqual(bridge.reusableFavorites({site:'US',codes:['WTEST2']}).missing,['WTEST2']);
+  put('connection.json',{connectedAt:999,extensionProtocol:4,inspection:{loggedIn:true,buyer:true,countryId:223,countryCode:'USA'}});
+  bridge.now=()=>4300;
+  assert.deepEqual(bridge.reusableFavorites({site:'US',codes:['WTEST2']}).missing,['WTEST2']);
 });
 test('unverified country mapping and duplicate codes cannot dispatch', t => {
   const {bridge} = setup(t);

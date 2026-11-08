@@ -33,14 +33,26 @@ async function checkFavorites(task, active, update) {
   throw Error(active() ? 'GIGA_BROWSER_RECEIPT_UNKNOWN' : 'GIGA_BROWSER_VIEW_CLOSED_CHECK_RECEIPT');
 }
 
-export function ensureGigaFavorites(target, input, admit) {
+export async function ensureGigaFavorites(target, input, admit) {
   const scope = {site: input.site, codes: Object.freeze([...input.codes])};
-  const count = Math.ceil(scope.codes.length / batchSize);
   if (!window.edup?.maintenance) return Promise.reject(Error('GIGA_BROWSER_DESKTOP_REQUIRED'));
+  let saved;
+  if (input.reuse) {
+    saved = await window.edup.maintenance('giga-browser-reuse', scope).catch(() => null);
+    if (!target.isConnected) return {cancelled: true};
+  }
+  const segments = (saved?.receipts || []).map(receipt => ({codes: receipt.codes, receipt}));
+  const pending = saved?.missing || scope.codes;
+  for (let offset = 0; offset < pending.length; offset += batchSize) {
+    segments.push({codes: pending.slice(offset, offset + batchSize)});
+  }
+  const count = segments.length;
   return new Promise(resolve => {
     const box = el('section', undefined, 'operation-preview');
     const note = el('p', `请手动打开并登录大健${names[scope.site] || scope.site}地区账号，在扩展中点击“连接此大健页”，再点击下方按钮。`);
-    const info = el('p', '本次固定 ' + scope.codes.length + ' 款商品。扩展读取商品退货率，服务端筛选后再收藏合格商品。');
+    const info = el('p', pending.length ? '需要核验 ' + pending.length + ' 款商品。扩展读取商品退货率，标为低或 N/A 的商品通过筛选后再收藏。'
+      : '正在复用 ' + scope.codes.length + ' 款商品已核验的收藏回执。');
+    if (pending.length && segments.some(segment => segment.receipt)) info.textContent += ' 其余商品使用已核验回执。';
     if (count > 1) info.textContent += ' 将按顺序处理 ' + count + ' 段，请保持此页面与大健登录。';
     const status = el('p'), next = el('button', '已打开，检查并继续'), cancel = el('button', '取消本次操作');
     const guide = el('details'), steps = el('ol'), folder = el('input'), copy = el('button', '复制扩展目录'), folderNote = el('p');
@@ -52,7 +64,7 @@ export function ensureGigaFavorites(target, input, admit) {
       '回到工作台，点击“已打开，检查并继续”。账号或地区不符时会暂停，不自动切换账号。']) steps.append(el('li', text));
     folder.readOnly = true; folder.setAttribute('aria-label', '大健浏览器扩展目录'); folder.value = '正在检查本机扩展目录…';
     copy.disabled = true; folder.onclick = () => folder.select();
-    window.edup.maintenance('giga-browser-folder').then(value => {if(value.directory){folder.value=value.directory;copy.disabled=false;}else throw Error();})
+    if(pending.length)window.edup.maintenance('giga-browser-folder').then(value => {if(value.directory){folder.value=value.directory;copy.disabled=false;}else throw Error();})
       .catch(() => {folder.value='本机扩展目录尚未准备';folderNote.textContent='请先完成本机连接组件设置，再按以上步骤加载。';});
     copy.onclick = async () => {try{await window.edup.maintenance('giga-browser-copy-folder');folderNote.textContent='扩展目录已复制。';}catch{folderNote.textContent='复制未完成，请选中上方目录手动复制。';}};
     guide.append(steps, folder, copy, folderNote, el('p', '连接只授权当前选定的大健页面；Cookie留在浏览器内。你可以随时在扩展里断开。'));
@@ -72,35 +84,43 @@ export function ensureGigaFavorites(target, input, admit) {
       if (started || !active()) return;
       next.disabled = true;
       cancel.disabled = true;
-      let processed = 0;
+      const processed = new Set();
+      const outcome = () => ({processed: processed.size, remaining: scope.codes.filter(sku => !processed.has(sku))});
       try {
-        for (let offset = 0; offset < scope.codes.length && active() && !stop; offset += batchSize) {
-          const codes = scope.codes.slice(offset, offset + batchSize);
-          const index = offset / batchSize + 1;
+        for (let offset = 0; offset < count && active() && !stop; offset++) {
+          const {codes, receipt: savedReceipt} = segments[offset];
+          const index = offset + 1;
           const update = text => { status.textContent = (count > 1 ? `第 ${index}/${count} 段 · ` : '') + text; };
           const allowStop = () => {
             if (stop) return;
             cancel.disabled = false;
             cancel.textContent = '完成当前分段后停止';
           };
-          update('正在核验账号并逐款读取商品退货率。');
-          const task = await window.edup.maintenance('giga-browser-start', {site: scope.site, codes});
+          let receipt = savedReceipt;
+          if (receipt) {
+            update('复用已核验的收藏回执。');
+          } else {
+            update('正在核验账号并逐款读取商品退货率。');
+            const task = await window.edup.maintenance('giga-browser-start', {site: scope.site, codes});
+            started = true;
+            if (count > 1) allowStop();
+            receipt = await checkFavorites(task, active, update);
+          }
           started = true;
           if (count > 1) allowStop();
-          const receipt = await checkFavorites(task, active, update);
           if (!active()) break;
           if (receipt.codes.length && (receipt.site !== scope.site || receipt.codes.some(sku => !codes.includes(sku)))) {
             throw Error('GIGA_BROWSER_RECEIPT_SCOPE_MISMATCH');
           }
           await admit(receipt, {index, count, update, active, allowStop, stopRequested: () => stop});
           if (!active()) break;
-          processed += codes.length;
+          for (const sku of codes) processed.add(sku);
           if (index < count && active() && !stop) {
             update('本段已结束，稍后开始下一段。');
             await wait(2000);
           }
         }
-        finish({processed, remaining: scope.codes.slice(processed)});
+        finish(outcome());
       } catch (error) {
         if (!started && active()) {
           const code = Object.keys(messages).find(key => String(error.message).includes(key));
@@ -108,9 +128,12 @@ export function ensureGigaFavorites(target, input, admit) {
           next.disabled = cancel.disabled = false;
           return;
         }
-        finish({processed, remaining: scope.codes.slice(processed), error});
+        finish({...outcome(), error});
       }
     };
-    box.append(el('h3', '先核验大健地区账号并收藏'), note, info, guide, next, cancel, status); target.append(box);
+    if (pending.length) box.append(el('h3', '先核验大健地区账号并收藏'), note, info, guide, next, cancel, status);
+    else box.append(info, cancel, status);
+    target.append(box);
+    if (!pending.length) next.onclick();
   });
 }

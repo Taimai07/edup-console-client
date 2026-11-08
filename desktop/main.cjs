@@ -93,6 +93,7 @@ app.whenReady().then(async()=>{
   if(action==='giga-browser-copy-folder'){clipboard.writeText(gigaBrowser.folder());return {copied:true};}
   if(action==='giga-browser-start')return gigaBrowser.start(arg);
   if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
+  if(action==='giga-browser-reuse')return gigaBrowser.reusableFavorites(arg);
   if(action==='giga-browser-screen'){
    const evidence=gigaBrowser.task(arg?.id);
    if(evidence.state!=='rates_read')throw Error('GIGA_RETURN_SCREEN_REQUIRED');
