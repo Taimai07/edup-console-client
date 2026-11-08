@@ -1,12 +1,13 @@
 import {extractCodes} from './sku-rules.js';
 import {renderWorkspace} from './workspace-v2.js';
 import {productEditor,gigaQueries,businessCall} from './operations.js';
+import {renderGigaStore} from './giga-store.js';
 import {renderMaintenance} from './maintenance.js';
 import {mountAI} from './ai-host.js';
 import {syncStatus,notify,message as feedback,friendlyError} from './notices.js';
 import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './analytics.js';
 const tabs=['经营总览','商品管理','经营报表','云仓上架','广告分析','运营 AI','同步与维护'];
-let disposeAI=null;
+let disposeAI=null, readImportedStore=false;
 let data=null,current=0,site='ALL',offline=false,cacheWarning='',loadError=null,detail=null,span='30',from='',to='',report='sales',gigaText='',extraction=null,selected=new Set(),gigaSite='US',listingSites=null;
 const api=async(route,body)=>{if(window.edup)return window.edup.request(route,body);const r=await fetch('/api/'+route,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json','Idempotency-Key':crypto.randomUUID()}:{},body:body?JSON.stringify(body):undefined});const v=await r.json();if(!r.ok)throw Error(v.error);return v;};
 tabs.forEach((t,i)=>{const b=el('button',t);b.onclick=()=>{current=i;detail=null;render();};document.querySelector('#nav').append(b);});
@@ -118,10 +119,42 @@ function giga(v){
   finally{file.disabled=false;extract.disabled=false;}
  };
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
- if(extraction){const c=card('识别结果','识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；结果按文档中首次出现的顺序排列。');
- for(const item of extraction.items){const label=el('label',undefined,'code-row'),check=el('input');check.type='checkbox';check.checked=selected.has(item.code);check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));c.append(label);}
- const count=el('p','已选择 '+selected.size+' 个');c.append(count);v.append(c); }
- const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');gigaQueries(operations,selected,{offline,site:gigaSite,siteAvailable:!!gigaSite&&!!listingSites?.sites?.some(x=>x.code===gigaSite),siteChecking:!listingSites||!!listingSites.checking});v.append(operations);
+ const siteAvailable=!!gigaSite&&!!listingSites?.sites?.some(item=>item.code===gigaSite);
+ renderGigaStore(v,{site:gigaSite,available:siteAvailable&&!offline,onImported:({store,codes})=>{
+  extraction={store,items:codes.map(code=>({code,reason:'大健店铺核验',occurrences:1})),duplicates:0};
+  selected=new Set(codes);
+  readImportedStore=codes.length>0;
+  render();
+ }});
+ if(extraction){
+  const store=extraction.store;
+  const detail=store
+   ? store.name+' · '+store.code+' · 已核对店铺收藏，导入 '+extraction.items.length+' 个 SKU。'
+   : '识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；结果按文档中首次出现的顺序排列。';
+  const c=card('识别结果',detail), count=el('p','已选择 '+selected.size+' 个');
+  let list=c;
+  if(store){
+   list=el('details');
+   list.append(el('summary','展开核对商品 SKU'));
+   c.append(count,list);
+  }
+  for(const item of extraction.items){
+   const label=el('label',undefined,'code-row'),check=el('input');
+   check.type='checkbox';check.checked=selected.has(item.code);
+   check.onchange=()=>{check.checked?selected.add(item.code):selected.delete(item.code);count.textContent='已选择 '+selected.size+' 个';};
+   label.append(check,el('strong',item.code),el('span',item.reason+' · 出现 '+item.occurrences+' 次','muted'));
+   list.append(label);
+  }
+  if(!store)c.append(count);
+  v.append(c);
+ }
+ const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');
+ const queue=gigaQueries(operations,selected,{offline,site:gigaSite,siteAvailable,siteChecking:!listingSites||!!listingSites.checking});
+ v.append(operations);
+ if(readImportedStore){
+  readImportedStore=false;
+  queue.read();
+ }
  v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
 document.querySelector('#refresh').onclick=()=>{if(current===3)listingSites=null;load();};load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);

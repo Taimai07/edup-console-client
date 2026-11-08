@@ -4,5 +4,5 @@ const result=spawnSync(executable,[path.join(__dirname,'native-giga-browser.cjs'
 const receiptPath=path.join(__dirname,'../dist/native-giga-browser-receipt.json');
 const receipt=fs.existsSync(receiptPath)?JSON.parse(fs.readFileSync(receiptPath,'utf8')):null;
 if(result.status!==0)throw Error('NATIVE_GIGA_BROWSER_FAILED:'+result.status+':'+(receipt?.error||String(result.stderr).slice(-2000)));
-if(!receipt?.passed||!receipt.sequentialSegments||!receipt.waitsForManualAccount||!receipt.cancelPreventsPipeline||!receipt.frozenScopePreserved||!receipt.completeReceiptRequired||receipt.modelAndPlatformCalls!==0||receipt.userWindowTouched!==false)throw Error('INVALID_NATIVE_GIGA_RECEIPT');
+if(!receipt?.passed||!receipt.storeImport||!receipt.sequentialSegments||!receipt.waitsForManualAccount||!receipt.cancelPreventsPipeline||!receipt.frozenScopePreserved||!receipt.completeReceiptRequired||receipt.modelAndPlatformCalls!==0||receipt.userWindowTouched!==false)throw Error('INVALID_NATIVE_GIGA_RECEIPT');
 console.log(JSON.stringify(receipt));

@@ -6,9 +6,11 @@ app.setPath('userData',path.join(root,'profile'));
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
 const {GigaBrowser}=require('../desktop/giga-browser.cjs'),bridge=new GigaBrowser({directory:root});
 const put=(name,v)=>fs.writeFileSync(path.join(root,name),JSON.stringify(v));
-put('connection.json',{extensionProtocol:4,inspection:{loggedIn:true,buyer:true,countryId:223,countryCode:'USA'}});
+put('connection.json',{extensionProtocol:4,storeCatalog:true,connectedAt:Date.now()/1000,inspection:{loggedIn:true,buyer:true,countryId:223,countryCode:'USA'}});
 put('heartbeat.json',{at:Date.now()/1000});
-const calls=[], segments=[], jobs=new Map();let scope=null;
+const calls=[], segments=[], jobs=new Map(), storeActions=[];
+const fixtureStore={id:'6547',code:'N616',name:'Fixture Store'};
+let scope=null;
 ipcMain.handle('fixture:business',(_event,op,args)=>{
   require('../shared/ai-contract.cjs').validateAIRequest(op,args);calls.push({op,args});
   if(op==='batch_chat_list')return {batches:[]};
@@ -36,6 +38,23 @@ ipcMain.handle('fixture:browser',(_event,op,args)=>{
     const task=bridge.start(args);
     setTimeout(()=>put(task.id+'.result.json',{result:{state:'DETAIL_RATES_READ',taskId:task.id,countryId:223,countryCode:'USA',amazonSubmitted:false,
       items:task.codes.map((sku,i)=>({sku,productId:String(i+1),state:i===0?'RATE_LOW':'RATE_HIGH'}))}}),250);
+    return task;
+  }
+  if(op==='giga-store-start'){
+    put('heartbeat.json',{at:Date.now()/1000});
+    const task=bridge.startStore(args);
+    const base={taskId:task.id,countryId:223,countryCode:'USA',amazonSubmitted:false,store:fixtureStore};
+    storeActions.push(args.action==='page'?'page'+args.page:args.action);
+    let result;
+    if(args.action==='resolve'){
+      if(args.input!=='N616')throw Error('WRONG_STORE_INPUT');
+      result={...base,state:'STORE_RESOLVED',saved:false,total:51,pageSize:50};
+    }else if(args.action==='page'){
+      const offset=(args.page-1)*50;
+      const items=Array.from({length:Math.min(50,51-offset)},(_,i)=>({sku:'ABTEST'+(offset+i+1),productId:String(offset+i+1)}));
+      result={...base,state:'STORE_PAGE_READ',page:args.page,total:51,items};
+    }else result={...base,state:'STORE_SAVED_VERIFIED',saved:true};
+    put(task.id+'.result.json',{result});
     return task;
   }
   if(op==='giga-browser-task')return bridge.task(args.id);
@@ -80,6 +99,14 @@ app.whenReady().then(async()=>{
   const queries=calls.filter(x=>x.op==='giga_query');
   if(queries.length!==2||queries.some(x=>x.args.site!=='US')||queries.flatMap(x=>x.args.codes).join(',')!=='WTEST1,WTEST21')throw Error('FROZEN_SCOPE_CHANGED');
   if(segments.map(codes=>codes.length).join(',')!=='20,1')throw Error('SEGMENTS_NOT_SEQUENTIAL');
-  receipt.sequentialSegments=true;receipt.frozenScopePreserved=true;receipt.completeReceiptRequired=true;receipt.nativeProtocol=true;receipt.passed=true;
+  await wait("![...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
+  await run("Promise.all([import('edup://console/giga-store.js'),import('edup://console/operations.js')]).then(([store,ops])=>{const view=document.querySelector('#view');view.replaceChildren();store.renderGigaStore(view,{site:'US',available:true,onImported:({codes})=>{window.imported=codes;view.replaceChildren();ops.gigaQueries(view,new Set(codes),{site:'US'}).read();}});})");
+  await run("document.querySelector('input[aria-label=\"大健店铺名称、编码或网址\"]').value='N616';[...document.querySelectorAll('button')].find(b=>b.textContent==='核对店铺').click()");
+  await wait("document.body.textContent.includes('Fixture Store · N616 · 51 件商品')");
+  await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='收藏店铺并导入 SKU').click()");
+  await wait("window.imported?.length===51&&[...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
+  if(await run("window.imported.at(-1)")!=='ABTEST51'||storeActions.join(',')!=='resolve,page1,page2,save'||
+    calls.filter(x=>x.op==='giga_query').length!==2)throw Error('STORE_HANDOFF_FAILED');
+  receipt.storeImport=true;receipt.sequentialSegments=true;receipt.frozenScopePreserved=true;receipt.completeReceiptRequired=true;receipt.nativeProtocol=true;receipt.passed=true;
   clearTimeout(limit);save();win.destroy();app.exit(0);
 }).catch(error=>{clearTimeout(limit);receipt.error=error.message;save();app.exit(1)});

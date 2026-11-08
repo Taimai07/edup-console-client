@@ -2,6 +2,10 @@
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const REGIONS = Object.freeze({DE: [81, 'DEU'], US: [223, 'USA'], GB: [222, 'GBR'], CA: [38, 'CAN'], JP: [107, 'JPN']});
+const storeId = /^[1-9][0-9]{0,14}$/;
+const storeCode = /^[A-Z0-9][A-Z0-9_.-]{0,39}$/;
+const productCode = /^[A-Z0-9][A-Z0-9_.-]{2,39}$/;
+const controls = /[\x00-\x1f\x7f]/;
 class GigaBrowser {
   constructor({directory, now = () => Date.now() / 1000} = {}) { this.directory = directory; this.now = now; }
   root() {
@@ -37,7 +41,8 @@ class GigaBrowser {
       const connection = this.read('connection.json'), heartbeat = this.read('heartbeat.json');
       const age = this.now() - (heartbeat?.at || 0), inspection = connection?.inspection;
       return {connected: age >= -5 && age < 10 && !!inspection, inspection: inspection || null,
-        extensionProtocol: connection?.extensionProtocol || 0};
+        extensionProtocol: connection?.extensionProtocol || 0, storeCatalog: connection?.storeCatalog === true,
+        connectedAt: connection?.connectedAt};
     } catch { return {connected: false, code: 'GIGA_BROWSER_SETUP_REQUIRED'}; }
   }
   folder() {
@@ -115,26 +120,91 @@ class GigaBrowser {
     return {excluded: screen.excluded, task: codes.length ? this.createTask({site:evidence.site, codes}, 'favorites', approved, screen.id) : null};
   }
   createTask(input, phase, approved, screenId) {
-    const frozen = this.validate(input), status = this.status(), [countryId, countryCode] = REGIONS[frozen.site];
+    const frozen = this.validate(input);
+    this.requireConnection(frozen.site);
+    const task = this.issueTask({op: phase, site: frozen.site, skus: frozen.codes,
+      ...(phase === 'favorites' ? {approved} : {})}, screenId ? {screenId} : {});
+    return {id: task.id, state: 'waiting_for_browser', site: frozen.site, codes: frozen.codes};
+  }
+  requireConnection(site, store = false) {
+    if (!Object.hasOwn(REGIONS, site)) throw Error('GIGA_REGION_MAPPING_NOT_VERIFIED');
+    const status = this.status(), [countryId, countryCode] = REGIONS[site];
     if (!status.connected) throw Error('GIGA_BROWSER_NOT_CONNECTED');
     if (status.extensionProtocol !== 4) throw Error('GIGA_BROWSER_UPDATE_REQUIRED');
+    if (store && (!status.storeCatalog || !Number.isFinite(status.connectedAt))) throw Error('GIGA_STORE_BRIDGE_UPDATE_REQUIRED');
     const current = status.inspection;
     if (current.loggedIn !== true || current.buyer !== true || current.countryId !== countryId || current.countryCode !== countryCode)
       throw Error('GIGA_BROWSER_REGION_MISMATCH');
+    return status;
+  }
+  issueTask(fields, privateFields = {}) {
     const prior = this.read('request.json');
     if (prior && !this.read(prior.id + '.result.json') &&
       (prior.expiresAt > this.now() || this.read(prior.id + '.dispatch.json'))) throw Error('GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION');
-    const id = crypto.randomUUID(), task = {id, op: phase, site: frozen.site, skus: frozen.codes, expiresAt: this.now() + 1800,
-      ...(phase === 'favorites' ? {approved} : {})};
-    this.write(id + '.client-task.json', {...task, ...(screenId ? {screenId} : {})});
+    const id = crypto.randomUUID(), task = {id, expiresAt: this.now() + 1800, ...fields};
+    this.write(id + '.client-task.json', {...task, ...privateFields});
     this.write('request.json', task);
-    return {id, state: 'waiting_for_browser', site: frozen.site, codes: frozen.codes};
+    return task;
+  }
+  startStore({site, action, input, ticket, page} = {}) {
+    const connection = this.requireConnection(site, true);
+    let fields;
+    let scope = {connectedAt: connection.connectedAt};
+    if (action === 'resolve') {
+      if (typeof input !== 'string' || !input.trim() || input.length > 512 || controls.test(input)) throw Error('STORE_INPUT_INVALID');
+      fields = {input: input.trim()};
+    } else if (action === 'page' || action === 'save') {
+      const resolved = this.task(ticket);
+      if (resolved.state !== 'store_resolved' || resolved.site !== site || resolved.connectedAt !== connection.connectedAt)
+        throw Error('STORE_RECONNECT_AND_RESOLVE');
+      if (action === 'page' && (!Number.isSafeInteger(page) || page < 1 || page > Math.ceil(resolved.total / resolved.pageSize)))
+        throw Error('STORE_PAGE_INVALID');
+      fields = {ticket, ...(action === 'page' ? {page} : {})};
+      scope = {...scope, store: resolved.store, total: resolved.total, pageSize: resolved.pageSize};
+    } else throw Error('STORE_ACTION_INVALID');
+    const task = this.issueTask({op: 'store', site, action, ...fields}, scope);
+    return {id: task.id, state: 'waiting_for_browser', site};
+  }
+  storeReceipt(task, result) {
+    const states = {resolve: ['STORE_RESOLVED', 'store_resolved'], page: ['STORE_PAGE_READ', 'store_page_read'],
+      save: ['STORE_SAVED_VERIFIED', 'store_saved']};
+    const [expected, state] = states[task.action];
+    if (result?.state !== expected) return {id: task.id, state: 'stopped', code: result?.code || 'STORE_RECEIPT_UNVERIFIED'};
+    const [countryId,countryCode] = REGIONS[task.site], store = result.store;
+    if (result.taskId !== task.id || result.countryId !== countryId || result.countryCode !== countryCode ||
+        result.amazonSubmitted !== false || !store || typeof store.id !== 'string' || !storeId.test(store.id) ||
+        typeof store.code !== 'string' || !storeCode.test(store.code) ||
+        typeof store.name !== 'string' || !store.name.trim() || store.name.length > 160 || controls.test(store.name) ||
+        (task.store && (task.store.id !== store.id || task.store.code !== store.code || task.store.name !== store.name)))
+      throw Error('STORE_RECEIPT_SCOPE_MISMATCH');
+    const base = {id: task.id, state, site: task.site, store, connectedAt: task.connectedAt};
+    if (task.action === 'resolve') {
+      if (typeof result.saved !== 'boolean' || !Number.isSafeInteger(result.total) || result.total < 0 || result.pageSize !== 50)
+        throw Error('STORE_RECEIPT_SCOPE_MISMATCH');
+      return {...base, saved: result.saved, total: result.total, pageSize: result.pageSize};
+    }
+    if (task.action === 'save') {
+      if (result.saved !== true) throw Error('STORE_RECEIPT_SCOPE_MISMATCH');
+      return {...base, saved: true};
+    }
+    const rows = result.items;
+    const expectedCount = Math.min(task.pageSize, task.total - (task.page - 1) * task.pageSize);
+    if (result.page !== task.page || result.total !== task.total || !Array.isArray(rows) || rows.length !== expectedCount ||
+        rows.some(row => !row || typeof row.sku !== 'string' || !productCode.test(row.sku) ||
+          typeof row.productId !== 'string' || !storeId.test(row.productId)) ||
+        new Set(rows.map(row => row.sku)).size !== rows.length || new Set(rows.map(row => row.productId)).size !== rows.length)
+      throw Error('STORE_RECEIPT_SCOPE_MISMATCH');
+    return {...base, total: task.total, page: task.page, items: rows};
   }
   task(id) {
     if (typeof id !== 'string' || !/^[a-f0-9-]{36}$/.test(id)) throw Error('GIGA_BROWSER_TASK_ID_INVALID');
     const task = this.read(id + '.client-task.json');
     if (!task || task.id !== id) throw Error('GIGA_BROWSER_TASK_NOT_FOUND');
     const saved = this.read(id + '.result.json');
+    if (task.op === 'store') {
+      if (task.expiresAt < this.now()) return {id, state:'stopped', code:'TASK_EXPIRED'};
+      if (saved) return this.storeReceipt(task, saved.result);
+    }
     if (!saved) return {id, state: this.read(id + '.dispatch.json') ? 'running_in_browser' : 'waiting_for_browser'};
     const result = saved.result, [countryId, countryCode] = REGIONS[task.site];
     const read = task.op === 'read_rates';

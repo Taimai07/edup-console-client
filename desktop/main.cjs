@@ -92,6 +92,7 @@ app.whenReady().then(async()=>{
   if(action==='giga-browser-folder'){try{return {directory:gigaBrowser.folder()};}catch{return {directory:null};}}
   if(action==='giga-browser-copy-folder'){clipboard.writeText(gigaBrowser.folder());return {copied:true};}
   if(action==='giga-browser-start')return gigaBrowser.start(arg);
+  if(action==='giga-store-start')return gigaBrowser.startStore(arg);
   if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
   if(action==='giga-browser-reuse')return gigaBrowser.reusableFavorites(arg);
   if(action==='giga-browser-screen'){

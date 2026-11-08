@@ -218,5 +218,6 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
 
  target.append(el('p','选择历史批次后可直接继续检查，不用重新输入编码。有效的已审资料、文案和模型缓存会复用；资料或类目要求改变时只重新处理受影响步骤，报价和库存会刷新。读取和AI准备都不会正式上架。检查通过的商品可在清单中核对价格和库存，再一键提交；服务器后台逐款处理，有问题的会留下说明。','muted'));
 
+ return {read:()=>{if(!query.disabled)return query.onclick();}};
 }
 
