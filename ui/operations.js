@@ -134,7 +134,7 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
       if(!job?.id)throw Error('GIGA_ADMISSION_RECEIPT_INVALID');
      }catch(error){
       if(error.outcome!=='unknown'&&!String(error.message).includes('OUTCOME_UNKNOWN')&&String(error.message).includes('GIGA_RETURN_SCREEN_REQUIRED'))
-       throw Error('收藏回执需要重新核验，请在读取云仓资料时刷新。');
+       throw Object.assign(Error('收藏回执需要重新核验'),{verificationRequired:receipt.codes});
       const limited=!String(error.message).includes('OUTCOME_UNKNOWN')&&error.outcome!=='unknown'&&String(error.message).includes('GIGA_QUERY_RATE_LIMIT');
       if(!limited){
        pendingJob=true;sentUnconfirmed=receipt.codes;remember(requestId);
@@ -170,6 +170,16 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
    });
    running=pendingJob;
    if(result.cancelled)return;
+   const verificationRequired=result.verificationRequired||result.error?.verificationRequired;
+   if(verificationRequired?.length){
+    const hold=el('section',undefined,'operation-preview');
+    hold.append(el('h3','请先读取待核验商品的云仓资料'),
+     el('p','以下 '+verificationRequired.length+' 款缺少有效收藏回执。请先用「读取云仓详情、报价和库存」核验，再回到当前入口。'),
+     el('pre',verificationRequired.join('\n')));
+    screeningResults.append(hold);
+    if((admitted||pendingJob)&&target.isConnected){starting=false;await refresh();}
+    return;
+   }
    if(result.remaining.length){
     const hold=el('section',undefined,'operation-preview');
     hold.append(el('h3','分段处理已暂停'),el('p','已处理 '+result.processed+' 款。'));

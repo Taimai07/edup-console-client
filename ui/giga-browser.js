@@ -43,6 +43,11 @@ export async function ensureGigaFavorites(target, input, admit) {
   }
   const segments = (saved?.receipts || []).map(receipt => ({codes: receipt.codes, receipt}));
   const pending = saved?.missing || scope.codes;
+  // Preparation may use verified evidence. Only the explicit read action can
+  // open the region and favorite confirmation.
+  if (input.reuse && pending.length) {
+    return {processed: 0, remaining: scope.codes, verificationRequired: pending};
+  }
   for (let offset = 0; offset < pending.length; offset += batchSize) {
     segments.push({codes: pending.slice(offset, offset + batchSize)});
   }
