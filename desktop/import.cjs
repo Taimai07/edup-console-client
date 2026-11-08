@@ -2,7 +2,7 @@ const fs=require('node:fs'),zlib=require('node:zlib');
 const {Worker, isMainThread, parentPort, workerData} = require('node:worker_threads');
 const MiB = 1024 * 1024;
 const materialLimits = {file: 10 * MiB, entry: 4 * MiB, expanded: 12 * MiB, entries: 1000};
-const skuLimits = {file: 128 * MiB, entry: 64 * MiB, expanded: 128 * MiB, entries: 65535, cachedFormulaText: true};
+const skuLimits = {file: 128 * MiB, entry: 64 * MiB, expanded: 128 * MiB, entries: 65535, cachedFormulaText: true, legacyExcel: true};
 const decodeXml=s=>s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_,x)=>String.fromCodePoint(x[0].toLowerCase()==='x'?parseInt(x.slice(1),16):Number(x))).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
 const {extractCodes} = require('../ui/sku-rules.js');
 function zipXml(bytes, limits){
@@ -48,10 +48,46 @@ function zipXml(bytes, limits){
  }
  return cells.join('\n');
 }
+function legacyExcelText(bytes, maxLength) {
+ const compoundFile = bytes.length >= 512 && bytes.subarray(0, 8).equals(
+  Buffer.from('d0cf11e0a1b11ae1', 'hex'));
+ const biffStream = bytes.length >= 8 &&
+  [0x0009, 0x0209, 0x0409, 0x0809].includes(bytes.readUInt16LE(0));
+ if (!compoundFile && !biffStream) throw Error('DOCUMENT_XLS_INVALID');
+
+ const {read} = require('./sheetjs-0-20-3.cjs');
+ let workbook;
+ try {
+  workbook = read(bytes, {type: 'buffer', cellFormula: false, cellHTML: false,
+   cellText: false, bookVBA: false});
+ } catch {
+  throw Error('DOCUMENT_XLS_INVALID');
+ }
+ if (!workbook.SheetNames?.length) throw Error('DOCUMENT_XLS_INVALID');
+ const values = [];
+ let length = 0;
+ for (const name of workbook.SheetNames) {
+  const sheet = workbook.Sheets[name];
+  if (!sheet) continue;
+  for (const address in sheet) {
+   if (address.startsWith('!') || !Object.hasOwn(sheet, address)) continue;
+   const value = sheet[address]?.v;
+   if (typeof value !== 'string' || value.length === 0) continue;
+   length += value.length + (values.length > 0 ? 1 : 0);
+   if (length > maxLength) throw Error('TEXT_TOO_LARGE');
+   values.push(value);
+  }
+ }
+ return values.join('\n');
+}
+
 function fileText(file, limits = materialLimits) {
  const office = /\.(docx|xlsx)$/i.test(file);
- if (!office && !/\.(txt|csv|tsv)$/i.test(file)) {
-  throw Error('支持TXT、CSV、TSV、DOCX和XLSX，请先将其他文档另存为这些格式');
+ const legacyExcel = limits.legacyExcel && /\.xls$/i.test(file);
+ if (!office && !legacyExcel && !/\.(txt|csv|tsv)$/i.test(file)) {
+  throw Error(limits.legacyExcel
+   ? '支持 TXT、CSV、TSV、DOCX、XLS 和 XLSX，请先将其他文档另存为这些格式。'
+   : '支持 TXT、CSV、TSV、DOCX 和 XLSX，请先将其他文档另存为这些格式。');
  }
  const handle = fs.openSync(file, 'r');
  let bytes;
@@ -72,6 +108,7 @@ function fileText(file, limits = materialLimits) {
   fs.closeSync(handle);
  }
  if (office) return zipXml(bytes, limits);
+ if (legacyExcel) return legacyExcelText(bytes, limits.expanded);
  try {
   return new TextDecoder('utf-8', {fatal: true}).decode(bytes);
  } catch {
@@ -83,6 +120,7 @@ let importInProgress = false;
 async function importCodes(file) {
  if (importInProgress) throw Error('正在识别另一份文档，请稍候。');
  importInProgress = true;
+ let timer;
  try {
   return await new Promise((resolve, reject) => {
    const worker = new Worker(__filename, {
@@ -97,8 +135,15 @@ async function importCodes(file) {
     ? '文档展开后所需内存过大，请拆成几份再识别。'
     : error.message)));
    worker.once('exit', () => reject(Error('文档识别提前结束，请重新选择文件。')));
+   if (/\.xls$/i.test(file)) {
+    timer = setTimeout(() => {
+     reject(Error('XLS 读取超时，请将工作簿拆分或另存为 XLSX 后重试。'));
+     void worker.terminate();
+    }, 60_000);
+   }
   });
  } finally {
+  clearTimeout(timer);
   importInProgress = false;
  }
 }
@@ -110,6 +155,7 @@ if (!isMainThread && workerData?.skuImport) {
   ERR_BUFFER_TOO_LARGE: 'Office 文档展开后的内容超过安全上限，请拆成几份再识别。',
   TEXT_TOO_LARGE: '提取出的文字过多，请拆成几份再识别。',
   DOCUMENT_ZIP_INVALID: '无法读取此 Office 文件，请检查是否损坏或加密。',
+  DOCUMENT_XLS_INVALID: '无法读取这个 XLS 工作簿，请检查文件是否损坏或加密，也可以另存为 XLSX 后重试。',
   DOCUMENT_CHANGED: '文件在读取期间发生变化，请保存后重新选择。',
   TOO_MANY_CODES: '识别到超过 500 个不同编码，请拆成几份再识别。',
  };

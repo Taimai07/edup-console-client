@@ -78,7 +78,7 @@ function reports(v){
  if(report==='compliance'){v.append(card('年度合规固定费用','人民币 '+number(data.compliance.annual_total)+' 元／年。属于经营固定费用，按用户提供的年度清单；不放在首页当作当天经营指标。'));return;}
 }
 function giga(v){
- const box=card('批量识别云仓商品编码','可以粘贴带说明的整段文字，或选择TXT、CSV、TSV、DOCX、XLSX。自动匹配以 W 开头的云仓编码，如 W123P456789、W1234P567890、W9999S00001。核对后再创建任务。'),input=el('textarea');input.placeholder='例如：商品编码：W1234P567890，另一个是 W9999S00001';input.value=gigaText;input.oninput=()=>gigaText=input.value;
+ const box=card('批量识别云仓商品编码','可以粘贴带说明的整段文字，或选择TXT、CSV、TSV、DOCX、XLS、XLSX。自动匹配以 W 开头的云仓编码，如 W123P456789、W1234P567890、W9999S00001。核对后再创建任务。'),input=el('textarea');input.placeholder='例如：商品编码：W1234P567890，另一个是 W9999S00001';input.value=gigaText;input.oninput=()=>gigaText=input.value;
  const tools=el('div',undefined,'toolbar'),extract=el('button','识别文字中的编码'),file=el('button','从文档识别'),result=el('div');extract.onclick=async()=>{try{extraction=window.edup?.maintenance?await window.edup.maintenance('extract-codes',{text:gigaText}):extractCodes(gigaText);selected=new Set(extraction.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
  file.disabled=!window.edup?.maintenance;
  file.onclick=async()=>{

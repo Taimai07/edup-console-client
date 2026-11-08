@@ -1,6 +1,32 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {extractCodes,fileText,importCodes}=require('../desktop/import.cjs');
 
+test('recognizes SKU text from multiple sheets in a binary XLS workbook', async () => {
+ const xls = require('../desktop/sheetjs-0-20-3.cjs');
+ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edup-xls-'));
+ const file = path.join(dir, 'fixture.XLS');
+ try {
+  const workbook = xls.utils.book_new();
+  xls.utils.book_append_sheet(workbook, xls.utils.aoa_to_sheet([
+   ['货号', '报价', 'W123P456789'], ['SKU: 123456', 1299, 'W1234P567890'],
+  ]), '云仓');
+  xls.utils.book_append_sheet(workbook, xls.utils.aoa_to_sheet([
+   ['X1234P567890', 'W9999S00001', 'W123P456789'],
+  ]), '第二页');
+  const bytes = Buffer.from(xls.write(workbook, {type: 'buffer', bookType: 'biff8'}));
+  assert.equal(bytes.subarray(0, 8).toString('hex'), 'd0cf11e0a1b11ae1');
+  fs.writeFileSync(file, bytes);
+  const result = await importCodes(file);
+  assert.deepEqual(result.items.map(item => item.code), ['W123P456789', 'W1234P567890', 'W9999S00001']);
+  assert.equal(result.duplicates, 1);
+  fs.writeFileSync(file, 'W123P456789');
+  await assert.rejects(importCodes(file), /无法读取这个 XLS 工作簿/);
+ } finally {
+  fs.rmSync(file, {force: true});
+  fs.rmdirSync(dir);
+ }
+});
+
 test('document import scans beyond the former size and text limits', async () => {
  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edup-large-import-'));
  const file = path.join(dir, 'fixture.txt');

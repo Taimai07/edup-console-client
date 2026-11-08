@@ -132,7 +132,7 @@ app.whenReady().then(async()=>{
   }
   if(action==='extract-codes')return extractCodes(arg?.text);
   if(action==='extract-document'){
-   const r=await dialog.showOpenDialog(win,{title:'选择含商品编码的文件',properties:['openFile'],filters:[{name:'商品编码文档',extensions:['txt','csv','tsv','docx','xlsx']}]});
+   const r=await dialog.showOpenDialog(win,{title:'选择含商品编码的文件',properties:['openFile'],filters:[{name:'商品编码文档',extensions:['txt','csv','tsv','docx','xls','xlsx']}]});
    if(r.canceled)return {canceled:true};return {...await importCodes(r.filePaths[0]),filename:path.basename(r.filePaths[0])};
   }
   if(action==='read-cache')return protectedState.readCache();
