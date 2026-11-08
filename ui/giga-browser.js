@@ -14,7 +14,7 @@ export function ensureGigaFavorites(target, input) {
   return new Promise((resolve, reject) => {
     const box = el('section', undefined, 'operation-preview');
     const note = el('p', `请手动打开并登录大健${names[scope.site] || scope.site}地区账号，在扩展中点击“连接此大健页”，再点击下方按钮。`);
-    const info = el('p', '本次固定 ' + scope.codes.length + ' 款商品。核验地区和收藏后，才继续原来的读取或准备；这一步不会提交亚马逊。');
+    const info = el('p', '本次固定 ' + scope.codes.length + ' 款商品。扩展读取商品退货率，服务端筛选后再收藏合格商品。');
     const status = el('p'), next = el('button', '已打开，检查并继续'), cancel = el('button', '取消本次操作');
     const guide = el('details'), steps = el('ol'), folder = el('input'), copy = el('button', '复制扩展目录'), folderNote = el('p');
     guide.append(el('summary', '首次安装、更新和连接教程'));
@@ -36,15 +36,23 @@ export function ensureGigaFavorites(target, input) {
       if (started || closed) return;
       next.disabled = true;
       try {
-        const task = await window.edup.maintenance('giga-browser-start', scope);
+        let task = await window.edup.maintenance('giga-browser-start', scope);
+        let excluded = [];
         started = true; cancel.disabled = true;
-        status.textContent = '正在核验大健账号、逐款查询与收藏。请保持账号不变；可在浏览器扩展中断开并暂停后续请求。';
+        status.textContent = '正在核验大健账号并逐款读取商品退货率。请保持账号不变。';
         const poll = async () => {
           if (closed) return;
           try {
             const receipt = await window.edup.maintenance('giga-browser-task', {id: task.id});
             if (!box.isConnected) { finish(Error('GIGA_BROWSER_VIEW_CLOSED_CHECK_RECEIPT')); return; }
-            if (receipt.state === 'verified') { finish(null, receipt); return; }
+            if (receipt.state === 'rates_read') {
+              const screening = await window.edup.maintenance('giga-browser-screen', {id: task.id});
+              excluded = screening.excluded;
+              if (!screening.task) { finish(null, {codes:[], excluded}); return; }
+              task = screening.task;
+              status.textContent = '服务端已返回符合条件的商品，正在收藏并核对。';
+            }
+            if (receipt.state === 'verified') { finish(null, {...receipt, excluded}); return; }
             if (receipt.state === 'stopped') { status.textContent = '收藏检查暂停，原读取/准备尚未启动。' + (messages[receipt.code] || receipt.code); finish(Error(receipt.code)); return; }
             timer = setTimeout(poll, 2000);
           } catch { status.textContent = '暂时无法读取收藏回执，原流程尚未启动。请核对连接后重试读取，勿重复创建任务。'; finish(Error('GIGA_BROWSER_RECEIPT_UNKNOWN')); }

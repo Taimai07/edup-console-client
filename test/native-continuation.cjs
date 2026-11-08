@@ -16,6 +16,14 @@ ipcMain.handle('fixture:call',async(_e,op,args)=>{calls.push({op,args});
  if(op==='giga_prepare'){if(args.parentJobId!==id||args.codes.join(',')!=='WTEST1,WTEST2')throw Error('WRONG_RESUME_SCOPE');resumed=true;return {id:'22222222-2222-4222-8222-222222222222',rootJobId:id,state:'queued'};}
  throw Error('UNEXPECTED_FIXTURE_OPERATION:'+op);
 });
+let pending;
+ipcMain.handle('fixture:browser',(_e,op,args)=>{
+ if(op==='giga-browser-folder')return {directory:'fixture-only-extension-folder'};
+ if(op==='giga-browser-start'){pending=args;return {id};}
+ if(op==='giga-browser-task')return {state:args.id===id?'rates_read':'verified',codes:pending.codes,screenId:id,items:pending.codes.map((sku,i)=>({sku,productId:String(i+1),state:'DETAIL_LOW_ALREADY_SAVED'}))};
+ if(op==='giga-browser-screen')return {excluded:[],task:{id:'22222222-2222-4222-8222-222222222222'}};
+ throw Error('UNEXPECTED_BROWSER_CALL');
+});
 const save=v=>fs.writeFileSync(path.join(client,'dist/native-continuation-receipt.json'),JSON.stringify({...v,calls}));
 const limit=setTimeout(()=>{save({passed:false,error:'TIMEOUT'});app.exit(2)},40000);
 app.whenReady().then(async()=>{
@@ -38,6 +46,8 @@ app.whenReady().then(async()=>{
  await run("[...document.querySelector('dialog').querySelectorAll('button')].find(x=>x.textContent==='提交给AI核对并继续处理').click()");
  for(let i=0;i<50&&!calls.some(x=>x.op==='batch_chat_send');i++)await new Promise(r=>setTimeout(r,100));
  await run("document.querySelector('dialog').close();[...document.querySelectorAll('button')].find(x=>x.textContent==='继续检查本批（复用已有结果）').click()");
+ await wait("[...document.querySelectorAll('button')].some(x=>x.textContent==='已打开，检查并继续')");
+ await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='已打开，检查并继续').click()");
  for(let i=0;i<50&&!resumed;i++)await new Promise(r=>setTimeout(r,100));
  if(!resumed||!calls.some(x=>x.op==='batch_material_save'&&x.args.jobId===id&&x.args.sku==='WTEST1')||!calls.some(x=>x.op==='batch_chat_send'&&x.args.jobId===id))throw Error('MATERIAL_OR_RESUME_FLOW_FAILED');
  clearTimeout(limit);save({passed:true,nativeProtocol:true,emptyInputHistoryResume:true,materialEditBoundToOriginalBatch:true,modelAndPlatformCalls:0,userWindowTouched:false,...before});w.destroy();app.exit(0);

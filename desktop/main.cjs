@@ -93,6 +93,12 @@ app.whenReady().then(async()=>{
   if(action==='giga-browser-copy-folder'){clipboard.writeText(gigaBrowser.folder());return {copied:true};}
   if(action==='giga-browser-start')return gigaBrowser.start(arg);
   if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
+  if(action==='giga-browser-screen'){
+   const evidence=gigaBrowser.task(arg?.id);
+   if(evidence.state!=='rates_read')throw Error('GIGA_RETURN_SCREEN_REQUIRED');
+   const screen=await request('ai',{op:'giga_screen',args:{site:evidence.site,evidence}});
+   return gigaBrowser.startApproved(evidence,screen);
+  }
   if(action==='settings')return settings();
   if(action==='ai-view-get'){try{const state=JSON.parse(fs.readFileSync(path.join(userDir,'ai-view.json'),'utf8'));if(!state||!state.drafts||typeof state.drafts!=='object'||Array.isArray(state.drafts)||(state.thread!==null&&!/^[a-f0-9-]{36}$/.test(state.thread)))throw Error('AI_VIEW_INVALID');return state;}catch{return {thread:null,drafts:{}};}}
   if(action==='ai-view-save'){if(!arg||!arg.drafts||typeof arg.drafts!=='object'||Array.isArray(arg.drafts)||(arg.thread!==null&&!/^[a-f0-9-]{36}$/.test(arg.thread)))throw Error('AI_VIEW_INVALID');const drafts={};for(const [key,value]of Object.entries(arg.drafts).slice(-20)){if((key==='_new'||/^[a-f0-9-]{36}$/.test(key))&&typeof value==='string'&&value.length<=12000)drafts[key]=value;}const dest=path.join(userDir,'ai-view.json'),tmp=dest+'.tmp';fs.writeFileSync(tmp,JSON.stringify({thread:arg.thread,drafts}),{mode:0o600});fs.renameSync(tmp,dest);return {saved:true};}
