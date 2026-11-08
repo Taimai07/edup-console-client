@@ -1,6 +1,6 @@
 import {el} from './analytics.js';
 const names = {US:'美国', DE:'德国', GB:'英国', CA:'加拿大', JP:'日本'};
-const batchSize = 20;
+const batchSize = 30;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const evidenceText = {
   RATE_MEDIUM: '上次详情页显示退货率为「中」，按当前规则排除。',
@@ -13,6 +13,13 @@ const evidenceText = {
   FAVORITE_NOT_VERIFIED: '收藏结果尚未核实，需重新核对。',
   RETURN_RATE_NOT_LOW: '退货率未达到当前筛选条件，本款已排除。',
   RETURN_RATE_UNVERIFIED: '详情页退货率未能核实，本款暂停。',
+  RESOLVE_FAILED:'未能核实这款 SKU 与大健商品的对应关系。',
+  RECONCILIATION_PENDING:'收藏仍待核对，本款没有重复发送。',
+  RATE_FRAME_BLOCKED:'详情页被拦截或跳转，退货率待核对。',
+  RATE_TIMEOUT:'详情页读取超时，退货率待核对。',
+  RATE_SKU_UNVERIFIED:'详情页中未核实到该 SKU，退货率待核对。',
+  RATE_LABEL_UNVERIFIED:'详情页未核实到有效退货率标签。',
+  RATE_CONFLICT:'详情页出现冲突的退货率标签。',
   SERVER_RECHECK: '服务器要求重新核验这款的收藏回执。'
 };
 export const favoriteEvidenceText = reason => Object.hasOwn(evidenceText, reason)
@@ -33,14 +40,14 @@ async function checkFavorites(task, active, update) {
     if (!active()) break;
     if (receipt.state === 'rates_read') {
       const screening = await window.edup.maintenance('giga-browser-screen', {id: task.id});
-      const rates = new Map(receipt.items.map(row => [row.sku, row.state]));
+      const rates = new Map(receipt.items.map(row => [row.sku, row.reason||row.state]));
       excluded = screening.excluded.map(row => ({...row, rate: rates.get(row.sku)}));
       if (!screening.task) return {codes: [], excluded};
       task = screening.task;
       deadline = Date.now() + 30 * 60 * 1000;
       update('正在收藏并核对通过退货率筛选的商品。');
     } else if (receipt.state === 'verified') {
-      return {...receipt, excluded};
+      return {...receipt, excluded: [...excluded,...(receipt.excluded||[])]};
     } else if (receipt.state === 'stopped') {
       throw Error(receipt.code);
     }
@@ -59,13 +66,15 @@ export async function ensureGigaFavorites(target, input, admit) {
   }
   const segments = (saved?.receipts || []).map(receipt => ({codes: receipt.codes, receipt}));
   const pending = saved?.missing || scope.codes;
+  const connection = await window.edup.maintenance('giga-browser-status').catch(() => null);
+  const segmentLimit = connection?.accountScopeV2 ? batchSize : 20;
   // Preparation may use verified evidence. Only the explicit read action can
   // open the region and favorite confirmation.
   if (input.reuse && pending.length) {
     return {processed: 0, remaining: scope.codes, verificationRequired: pending, verificationDetails: saved?.missingDetails};
   }
-  for (let offset = 0; offset < pending.length; offset += batchSize) {
-    segments.push({codes: pending.slice(offset, offset + batchSize)});
+  for (let offset = 0; offset < pending.length; offset += segmentLimit) {
+    segments.push({codes: pending.slice(offset, offset + segmentLimit)});
   }
   const count = segments.length;
   return new Promise(resolve => {
@@ -76,6 +85,8 @@ export async function ensureGigaFavorites(target, input, admit) {
     if (pending.length && segments.some(segment => segment.receipt)) info.textContent += ' 其余商品使用已核验回执。';
     if (count > 1) info.textContent += ' 将按顺序处理 ' + count + ' 段，请保持此页面与大健登录。';
     const status = el('p'), next = el('button', '已打开，检查并继续'), cancel = el('button', '取消本次操作');
+    const reconcile = el('button','核对上次收藏结果');
+    reconcile.hidden=true;
     const guide = el('details'), steps = el('ol'), folder = el('input'), copy = el('button', '复制扩展目录'), folderNote = el('p');
     guide.append(el('summary', '首次安装、更新和连接教程'));
     for (const text of ['首次使用：在Chrome地址栏输入 chrome://extensions/，打开“开发者模式”。',
@@ -91,6 +102,18 @@ export async function ensureGigaFavorites(target, input, admit) {
     guide.append(steps, folder, copy, folderNote, el('p', '连接只授权当前选定的大健页面；Cookie留在浏览器内。你可以随时在扩展里断开。'));
     let started = false, stop = false;
     const active = () => box.isConnected;
+    reconcile.onclick=async()=>{
+      reconcile.disabled=true;
+      next.disabled=true;
+      try{
+        const task=await window.edup.maintenance('giga-browser-reconcile');
+        const receipt=await checkFavorites(task,active,text=>{status.textContent=text;});
+        status.textContent=receipt.excluded.length?'部分收藏仍待核对；这些商品不会重复发送。':'上次收藏已核对。请继续原批次。';
+        reconcile.hidden=true;
+      }catch(error){
+        status.textContent='收藏结果仍待核对。'+(messages[error.message]||'请先检查大健买家账号及收藏状态。');
+      }finally{reconcile.disabled=false;next.disabled=false;}
+    };
     const finish = value => { clearInterval(viewWatcher); box.remove(); resolve(value); };
     const viewWatcher = setInterval(() => {
       if (!active() && !next.disabled) finish({cancelled: true});
@@ -133,7 +156,7 @@ export async function ensureGigaFavorites(target, input, admit) {
           if (receipt.codes.length && (receipt.site !== scope.site || receipt.codes.some(sku => !codes.includes(sku)))) {
             throw Error('GIGA_BROWSER_RECEIPT_SCOPE_MISMATCH');
           }
-          await admit(receipt, {index, count, update, active, allowStop, stopRequested: () => stop});
+          await admit(receipt, {index, count, codes, update, active, allowStop, stopRequested: () => stop});
           if (!active()) break;
           for (const sku of codes) processed.add(sku);
           if (index < count && active() && !stop) {
@@ -146,13 +169,14 @@ export async function ensureGigaFavorites(target, input, admit) {
         if (!started && active()) {
           const code = Object.keys(messages).find(key => String(error.message).includes(key));
           status.textContent = code ? messages[code] : error.message;
+          if(code==='GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION')reconcile.hidden=false;
           next.disabled = cancel.disabled = false;
           return;
         }
         finish({...outcome(), error});
       }
     };
-    if (pending.length) box.append(el('h3', '先核验大健地区账号并收藏'), note, info, guide, next, cancel, status);
+    if (pending.length) box.append(el('h3', '先核验大健地区账号并收藏'), note, info, guide, next, cancel, reconcile, status);
     else box.append(info, cancel, status);
     target.append(box);
     if (!pending.length) next.onclick();

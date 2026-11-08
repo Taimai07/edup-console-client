@@ -42,6 +42,7 @@ class GigaBrowser {
       const age = this.now() - (heartbeat?.at || 0), inspection = connection?.inspection;
       return {connected: age >= -5 && age < 10 && !!inspection, inspection: inspection || null,
         extensionProtocol: connection?.extensionProtocol || 0, storeCatalog: connection?.storeCatalog === true,
+        accountScopeV2: connection?.accountScopeV2 === true,
         connectedAt: connection?.connectedAt};
     } catch { return {connected: false, code: 'GIGA_BROWSER_SETUP_REQUIRED'}; }
   }
@@ -53,7 +54,7 @@ class GigaBrowser {
   }
   validate({site, codes}) {
     if (!REGIONS[site]) throw Error('GIGA_REGION_MAPPING_NOT_VERIFIED');
-    if (!Array.isArray(codes) || !codes.length || codes.length > 20 || new Set(codes).size !== codes.length ||
+    if (!Array.isArray(codes) || !codes.length || codes.length > 30 || new Set(codes).size !== codes.length ||
       codes.some(s => typeof s !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,39}$/.test(s))) throw Error('GIGA_CODES_INVALID');
     return {site, codes: [...codes]};
   }
@@ -104,7 +105,7 @@ class GigaBrowser {
         for (const row of receipt?.items || []) if (candidates.has(row.sku)) reasons.set(row.sku, row.state);
         continue;
       }
-      if (receipt?.state !== 'verified' || !/^[a-f0-9-]{36}$/.test(task.screenId||'')) {
+      if (receipt?.state !== 'verified' || !/^[a-f0-9-]{36}$/.test(task.screenId||'') || (connection.accountScopeV2&&!receipt.buyerHash)) {
         for (const sku of candidates) reasons.set(sku, 'FAVORITE_NOT_VERIFIED');
         continue;
       }
@@ -118,7 +119,8 @@ class GigaBrowser {
       if (!items.length) continue;
       const matched = items.map(row => row.sku);
       for (const sku of matched) missing.delete(sku);
-      receipts.push({site, screenId: receipt.screenId, codes: matched, items, excluded: []});
+      receipts.push({site, screenId: receipt.screenId, codes: matched, items, excluded: [],
+        ...(receipt.buyerHash?{buyerHash:receipt.buyerHash}:{})});
     }
     return result();
   }
@@ -126,6 +128,7 @@ class GigaBrowser {
     const approved = screen?.approved;
     if (!approved || typeof approved !== 'object' || Array.isArray(approved) ||
       !/^[a-f0-9-]{36}$/.test(screen.id) || !Array.isArray(screen.excluded)) throw Error('GIGA_RETURN_SCREEN_SCOPE_INVALID');
+    if (evidence.buyerHash && evidence.buyerHash !== screen.buyerHash) throw Error('GIGA_BUYER_SCOPE_REQUIRED');
     const codes = Object.keys(approved);
     const observed = new Map(evidence.items.map(row => [row.sku, row.productId]));
     const excluded = new Set(screen.excluded.map(row => row.sku));
@@ -133,13 +136,22 @@ class GigaBrowser {
       codes.some(sku => !observed.has(sku) || observed.get(sku) !== approved[sku] || excluded.has(sku)) ||
       screen.excluded.some(row => !observed.has(row.sku) || !['RETURN_RATE_NOT_LOW','RETURN_RATE_UNVERIFIED'].includes(row.state)))
       throw Error('GIGA_RETURN_SCREEN_SCOPE_INVALID');
-    return {excluded: screen.excluded, task: codes.length ? this.createTask({site:evidence.site, codes}, 'favorites', approved, screen.id) : null};
+    return {excluded: screen.excluded, task: codes.length ? this.createTask({site:evidence.site, codes}, 'favorites', approved, screen.id, evidence.buyerHash) : null};
   }
-  createTask(input, phase, approved, screenId) {
+  createTask(input, phase, approved, screenId, expectedBuyerHash) {
     const frozen = this.validate(input);
-    this.requireConnection(frozen.site);
+    const connection=this.requireConnection(frozen.site);
+    if(frozen.codes.length>20&&!connection.accountScopeV2)throw Error('GIGA_BROWSER_UPDATE_REQUIRED');
+    let buyerScope={};
+    if(connection.accountScopeV2){
+      let saved=this.read('buyer-scope.json');
+      if(!saved){saved={salt:crypto.randomBytes(32).toString('hex')};this.write('buyer-scope.json',saved);}
+      if(!/^[a-f0-9]{64}$/.test(saved.salt)|| (phase==='favorites'&&!/^[a-f0-9]{64}$/.test(expectedBuyerHash||'')))
+        throw Error('GIGA_BUYER_SCOPE_REQUIRED');
+      buyerScope={buyerSalt:saved.salt,...(phase==='favorites'?{expectedBuyerHash}:{})};
+    }
     const task = this.issueTask({op: phase, site: frozen.site, skus: frozen.codes,
-      ...(phase === 'favorites' ? {approved} : {})}, screenId ? {screenId} : {});
+      ...buyerScope,...(phase === 'favorites' ? {approved} : {})}, screenId ? {screenId} : {});
     return {id: task.id, state: 'waiting_for_browser', site: frozen.site, codes: frozen.codes};
   }
   requireConnection(site, store = false) {
@@ -155,26 +167,60 @@ class GigaBrowser {
   }
   issueTask(fields, privateFields = {}) {
     const prior = this.read('request.json');
-    if (prior && !this.read(prior.id + '.result.json') &&
-      (prior.expiresAt > this.now() || this.read(prior.id + '.dispatch.json'))) throw Error('GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION');
+    if (prior && !this.read(prior.id + '.result.json')) {
+      const readOnly = ['read_rates', 'inspect'].includes(prior.op) || (prior.op==='favorites'&&prior.reconcileOnly===true) ||
+        (prior.op === 'store' && ['resolve', 'page'].includes(prior.action));
+      const readback=fields.reconcileOnly===true&&privateFields.reconciles===prior.id;
+      if (prior.expiresAt > this.now() || (!readOnly && !readback && this.read(prior.id + '.dispatch.json')))
+        throw Error('GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION');
+    }
     const id = crypto.randomUUID(), task = {id, expiresAt: this.now() + 1800, ...fields};
     this.write(id + '.client-task.json', {...task, ...privateFields});
     this.write('request.json', task);
     return task;
   }
+  reconcileFavorites() {
+    const prior=this.read('request.json');
+    if(!prior || prior.op!=='favorites' || !this.read(prior.id+'.dispatch.json') || this.read(prior.id+'.result.json'))
+      throw Error('GIGA_FAVORITE_RECONCILIATION_NOT_REQUIRED');
+    const previous=this.read(prior.id+'.client-task.json');
+    const status=this.requireConnection(prior.site);
+    if(!previous?.screenId || !status.accountScopeV2 || !prior.buyerSalt || !prior.expectedBuyerHash)
+      throw Error('GIGA_BUYER_SCOPE_REQUIRED');
+    const {id,expiresAt,...fields}=prior;
+    const task=this.issueTask({...fields,reconcileOnly:true},{screenId:previous.screenId,reconciles:id});
+    return {id:task.id,state:'waiting_for_browser',site:task.site,codes:task.skus};
+  }
   startStore({site, action, input, ticket, page} = {}) {
     const connection = this.requireConnection(site, true);
+    const priorTasks = fs.readdirSync(this.root()).filter(name => /^[a-f0-9-]{36}\.client-task\.json$/.test(name))
+      .map(name => this.read(name)).filter(task => task?.op === 'store' && task.site === site &&
+        task.connectedAt === connection.connectedAt && task.expiresAt > this.now());
     let fields;
     let scope = {connectedAt: connection.connectedAt};
     if (action === 'resolve') {
       if (typeof input !== 'string' || !input.trim() || input.length > 512 || controls.test(input)) throw Error('STORE_INPUT_INVALID');
       fields = {input: input.trim()};
+      const previous = priorTasks.filter(task => task.action === 'resolve' && task.input === fields.input)
+        .sort((a,b) => b.expiresAt-a.expiresAt)[0];
+      if (previous && this.read(previous.id + '.result.json')) {
+        const receipt = this.task(previous.id);
+        const pages = new Set(priorTasks.filter(task => task.action === 'page' && task.ticket === previous.id &&
+          this.read(task.id + '.result.json') && this.task(task.id).state === 'store_page_read').map(task => task.page));
+        if (receipt.state === 'store_resolved' && pages.size > 0 && pages.size < Math.ceil(receipt.total / receipt.pageSize))
+          return {id: previous.id, state: 'waiting_for_browser', site};
+      }
     } else if (action === 'page' || action === 'save') {
       const resolved = this.task(ticket);
       if (resolved.state !== 'store_resolved' || resolved.site !== site || resolved.connectedAt !== connection.connectedAt)
         throw Error('STORE_RECONNECT_AND_RESOLVE');
       if (action === 'page' && (!Number.isSafeInteger(page) || page < 1 || page > Math.ceil(resolved.total / resolved.pageSize)))
         throw Error('STORE_PAGE_INVALID');
+      if (action === 'page') {
+        const previous = priorTasks.find(task => task.action === 'page' && task.ticket === ticket && task.page === page &&
+          this.read(task.id + '.result.json') && this.task(task.id).state === 'store_page_read');
+        if (previous) return {id: previous.id, state: 'waiting_for_browser', site};
+      }
       fields = {ticket, ...(action === 'page' ? {page} : {allowWrite: this.storeWriteAllowed(site, resolved.store.id)})};
       scope = {...scope, store: resolved.store, total: resolved.total, pageSize: resolved.pageSize};
     } else throw Error('STORE_ACTION_INVALID');
@@ -241,15 +287,21 @@ class GigaBrowser {
       return {id, state: 'stopped', code: result?.code || 'GIGA_FAVORITES_NOT_VERIFIED'};
     const rows = result.items;
     const states = read ? ['RATE_LOW','RATE_NA','RATE_MEDIUM','RATE_HIGH','RATE_UNVERIFIED']
-      : ['DETAIL_LOW_ADDED','DETAIL_LOW_ALREADY_SAVED','DETAIL_LOW_RECONCILED'];
+      : ['DETAIL_LOW_ADDED','DETAIL_LOW_ALREADY_SAVED','DETAIL_LOW_RECONCILED','FAVORITE_UNVERIFIED'];
     if (result.taskId !== id || result.countryId !== countryId || result.countryCode !== countryCode || result.amazonSubmitted !== false ||
+      (task.buyerSalt&&(!/^[a-f0-9]{64}$/.test(result.buyerHash||'')||(!read&&result.buyerHash!==task.expectedBuyerHash))) ||
       !Array.isArray(rows) || rows.length !== task.skus.length ||
       rows.some(row => !row || !task.skus.includes(row.sku) || !states.includes(row.state) ||
-        typeof row.productId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(row.productId) || (!read && task.approved?.[row.sku] !== row.productId)) ||
-      new Set(rows.map(row => row.sku)).size !== rows.length || new Set(rows.map(row => row.productId)).size !== rows.length)
+        (!(read&&row.productId===null&&row.state==='RATE_UNVERIFIED'&&row.reason==='RESOLVE_FAILED') &&
+          (typeof row.productId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(row.productId))) ||
+        (!read && task.approved?.[row.sku] !== row.productId)) ||
+      new Set(rows.map(row => row.sku)).size !== rows.length ||
+      new Set(rows.flatMap(row=>row.productId?[row.productId]:[])).size !== rows.filter(row=>row.productId).length)
       throw Error('GIGA_BROWSER_RECEIPT_SCOPE_MISMATCH');
-    return {id, state: read ? 'rates_read' : 'verified', site: task.site, countryId, countryCode, codes: [...task.skus], items: rows,
-      ...(read ? {} : {screenId: task.screenId})};
+    const verified=rows.filter(row=>row.state!=='FAVORITE_UNVERIFIED');
+    return {id, state: read ? 'rates_read' : 'verified', site: task.site, countryId, countryCode, codes: verified.map(row=>row.sku), items: verified,
+      ...(result.buyerHash?{buyerHash:result.buyerHash}:{}),
+      ...(read ? {} : {screenId: task.screenId,excluded:rows.filter(row=>row.state==='FAVORITE_UNVERIFIED')})};
   }
 }
 module.exports = {GigaBrowser, REGIONS};

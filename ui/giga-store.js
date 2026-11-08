@@ -25,7 +25,14 @@ export async function collectStore(resolved, getPage, progress, active) {
   const pages = Math.ceil(resolved.total / resolved.pageSize);
   for (let page = 1; page <= pages; page++) {
     if (!active()) throw Error('STORE_VIEW_CLOSED');
-    const result = await getPage(page);
+    let result;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try { result = await getPage(page); break; }
+      catch (error) {
+        if (attempt === 2 || !active() || error.message !== 'STORE_CATALOG_PAGE_UNVERIFIED') throw error;
+        await wait(1100);
+      }
+    }
     if (result.state !== 'store_page_read' || result.page !== page || result.total !== resolved.total ||
         result.store.id !== resolved.store.id || result.store.code !== resolved.store.code)
       throw Error('STORE_CATALOG_CHANGED');
@@ -122,9 +129,20 @@ export function renderGigaStore(target, {site, available, onImported}) {
       if (!active()) return;
       status.textContent = '正在复核清单和店铺收藏状态…';
       const timeout = Math.min(1500000, 120000 + Math.ceil(store.total / store.pageSize) * 5000);
-      const saved = await run('save', {ticket: store.id}, timeout);
-      if (saved.state !== 'store_saved' || saved.saved !== true) throw Error('STORE_FAVORITE_RECONCILIATION_REQUIRED');
-      if (active()) onImported({store: store.store, codes});
+      let storeSaved = store.saved === true;
+      if (!storeSaved) {
+        try {
+          const saved = await run('save', {ticket: store.id}, timeout);
+          storeSaved = saved.state === 'store_saved' && saved.saved === true;
+        } catch (error) {
+          if (/STORE_(CATALOG_CHANGED|CATALOG_INCOMPLETE|IDENTITY_UNVERIFIED|RECONNECT_AND_RESOLVE|PRODUCT_SCOPE_MISMATCH|BUYER_LOGIN_REQUIRED)|GIGA_BROWSER_REGION_MISMATCH/.test(String(error.message))) {
+            throw error;
+          }
+          // The directory has already passed page, store and product checks.
+          // An unknown favorite result does not invalidate those receipts.
+        }
+      }
+      if (active()) onImported({store: store.store, codes, storeSaved});
     } catch (error) {
       failure(error);
     } finally {

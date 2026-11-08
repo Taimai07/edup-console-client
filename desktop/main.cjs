@@ -94,6 +94,11 @@ app.whenReady().then(async()=>{
   if(action==='giga-browser-start')return gigaBrowser.start(arg);
   if(action==='giga-store-start')return gigaBrowser.startStore(arg);
   if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
+  if(action==='giga-browser-reconcile')return gigaBrowser.reconcileFavorites();
+  if(action==='giga-open-buyer-page'){
+   if(typeof arg?.asin!=='string'||!/^[A-Z0-9]{10}$/.test(arg.asin))throw Error('GIGA_BUYER_PAGE_INVALID');
+   await shell.openExternal('https://www.amazon.com/dp/'+arg.asin);return {requested:true};
+  }
   if(action==='giga-browser-reuse')return gigaBrowser.reusableFavorites(arg);
   if(action==='giga-browser-screen'){
    const evidence=gigaBrowser.task(arg?.id);

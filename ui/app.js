@@ -120,8 +120,8 @@ function giga(v){
  };
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
  const siteAvailable=!!gigaSite&&!!listingSites?.sites?.some(item=>item.code===gigaSite);
- renderGigaStore(v,{site:gigaSite,available:siteAvailable&&!offline,onImported:({store,codes})=>{
-  extraction={store,items:codes.map(code=>({code,reason:'大健店铺核验',occurrences:1})),duplicates:0};
+ renderGigaStore(v,{site:gigaSite,available:siteAvailable&&!offline,onImported:({store,codes,storeSaved})=>{
+  extraction={store,storeSaved,items:codes.map(code=>({code,reason:'大健店铺核验',occurrences:1})),duplicates:0};
   selected=new Set(codes);
   readImportedStore=codes.length>0;
   render();
@@ -129,7 +129,8 @@ function giga(v){
  if(extraction){
   const store=extraction.store;
   const detail=store
-   ? store.name+' · '+store.code+' · 已核对店铺收藏，导入 '+extraction.items.length+' 个 SKU。'
+   ? store.name+' · '+store.code+' · 已导入 '+extraction.items.length+' 个 SKU。'+
+     (extraction.storeSaved?'已核对店铺收藏。':'店铺收藏结果待核对。')
    : '识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；结果按文档中首次出现的顺序排列。';
   const c=card('识别结果',detail), count=el('p','已选择 '+selected.size+' 个');
   let list=c;
