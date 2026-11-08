@@ -31,16 +31,17 @@ if ($env:GITHUB_ENV) {
     Add-Content -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Value ('ELECTRON_BUILDER_CACHE=' + $cache)
 }
 
-# The binary CDN is reachable, but its standalone checksum asset can fail.
-# Preseed the official, digest-pinned manifest without disabling verification.
-$electronCache = Join-Path $env:LOCALAPPDATA 'electron/Cache'
-New-Item -Path $electronCache -ItemType Directory -Force | Out-Null
-$manifest = Join-Path $electronCache 'SHASUMS256.txt-45.2.1'
-$download = $manifest + '.download'
-Invoke-WebRequest -Uri 'https://api.github.com/repos/electron/electron/releases/assets/693903315?download=1' `
-    -Headers @{Accept='application/octet-stream'} -UserAgent 'EDUPLINK-build' -OutFile $download -TimeoutSec 60
-if ((Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant() -ne '7ffbf4a406ba5df5bd97e8a549ed1042af209456f98cf041c4dfababdc2f9abb') {
-    throw 'Unexpected Electron 45.2.1 checksum manifest digest.'
+# Use the exact official ZIP, whose SHA-256 matches Electron's SHASUMS256.
+# The same verified runtime is used for packaging and the headless tests.
+$electronZip = Join-Path $cache 'electron-v45.2.1-win32-x64.zip'
+Invoke-WebRequest -Uri 'https://api.github.com/repos/electron/electron/releases/assets/693536760?download=1' `
+    -Headers @{Accept='application/octet-stream'} -UserAgent 'EDUPLINK-build' -OutFile $electronZip -TimeoutSec 180
+if ((Get-Item -LiteralPath $electronZip).Length -ne 158187314 -or
+    (Get-FileHash -LiteralPath $electronZip -Algorithm SHA256).Hash.ToLowerInvariant() -ne '7c342aee45d5b4ccafe5dfe9037028796b082735a576e21e2b4e2d8422ebb727') {
+    throw 'Unexpected Electron 45.2.1 distribution digest.'
 }
-Move-Item -LiteralPath $download -Destination $manifest -Force
-
+Expand-Archive -LiteralPath $electronZip -DestinationPath 'node_modules/electron/dist' -Force
+Set-Content -LiteralPath 'node_modules/electron/path.txt' -Value 'electron.exe' -Encoding ascii -NoNewline
+if ($env:GITHUB_ENV) {
+    Add-Content -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Value ('EDUP_VERIFIED_ELECTRON_ZIP=' + $electronZip)
+}

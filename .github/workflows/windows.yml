@@ -26,12 +26,12 @@ jobs:
       - run: node test/continuation.test.cjs
       - run: ./scripts/seed-builder-cache.ps1
         shell: pwsh
-      - run: npm run build:win
+      - run: npm run build:win -- "--config.electronDist=$env:EDUP_VERIFIED_ELECTRON_ZIP"
+        shell: pwsh
         env:
           DEBUG: electron-builder
       - name: Verify signed application patches and rollback without an installer
         run: |
-          node node_modules/electron/install.js
           node test/patch-electron-smoke.cjs node_modules/electron/dist/electron.exe
       - name: Verify saved-batch continuation and material editing without user data
         run: node test/run-native-continuation.cjs
