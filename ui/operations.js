@@ -65,7 +65,7 @@ export function openMaterialReview({jobId,reportJobId,sku,issues=[],openChat,cal
 
 export function quoteTables(products){const group=new Map(),out=document.createDocumentFragment();for(const p of products){const c=/^[A-Z]{3}$/.test(p.currency||'')?p.currency:'币种待核实';if(!group.has(c))group.set(c,[]);group.get(c).push(p);}for(const [currency,rows] of group)out.append(table(['编码','商品','采购报价（'+currency+'）','标准配送报价（'+currency+'）','供应商库存'],rows.map(x=>[x.code,x.name,number(x.purchaseQuote),number(x.shippingQuote),x.available??'待核实'])));return out;}
 
-export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=true,siteChecking=false}={}){
+export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=true,siteChecking=false,readOnMount=false}={}){
 
  const screeningResults=el('section'),history=el('select'),historyLabel=el('label','历史上架批次 '),chat=el('section'),materials=el('section'),progress=el('section'),bulk=el('section',undefined,'operation-preview'),results=el('div'),report=el('section',undefined,'operation-preview'),review=el('section',undefined,'operation-preview'),actions=el('div',undefined,'toolbar');history.setAttribute('aria-label','历史上架批次');historyLabel.append(history);history.append(el('option','选择历史批次'));
 
@@ -218,6 +218,6 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
 
  target.append(el('p','选择历史批次后可直接继续检查，不用重新输入编码。有效的已审资料、文案和模型缓存会复用；资料或类目要求改变时只重新处理受影响步骤，报价和库存会刷新。读取和AI准备都不会正式上架。检查通过的商品可在清单中核对价格和库存，再一键提交；服务器后台逐款处理，有问题的会留下说明。','muted'));
 
- return {read:()=>{if(!query.disabled)return query.onclick();}};
+ if(readOnMount)queueMicrotask(()=>{if(target.isConnected&&!query.disabled)query.onclick();});
 }
 

@@ -149,12 +149,9 @@ function giga(v){
   v.append(c);
  }
  const operations=card('商品准备与提交','先读取、准备，通过后在商品旁核对并提交。');
- const queue=gigaQueries(operations,selected,{offline,site:gigaSite,siteAvailable,siteChecking:!listingSites||!!listingSites.checking});
+ gigaQueries(operations,selected,{offline,site:gigaSite,siteAvailable,siteChecking:!listingSites||!!listingSites.checking,readOnMount:readImportedStore});
+ readImportedStore=false;
  v.append(operations);
- if(readImportedStore){
-  readImportedStore=false;
-  queue.read();
- }
  v.append(card('识别与上架是两个步骤','本地规则识别不产生模型费用。请先核对编码再创建任务；准备发布前会检查原流水线的审核条件，并要求你确认。扫描件和PDF需先转换为支持的文档格式。'));
 }
 document.querySelector('#refresh').onclick=()=>{if(current===3)listingSites=null;load();};load();setInterval(()=>{if(!document.hidden&&(current===0||current===2))load();},60000);

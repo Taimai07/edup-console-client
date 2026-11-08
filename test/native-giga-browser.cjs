@@ -100,7 +100,7 @@ app.whenReady().then(async()=>{
   if(queries.length!==2||queries.some(x=>x.args.site!=='US')||queries.flatMap(x=>x.args.codes).join(',')!=='WTEST1,WTEST21')throw Error('FROZEN_SCOPE_CHANGED');
   if(segments.map(codes=>codes.length).join(',')!=='20,1')throw Error('SEGMENTS_NOT_SEQUENTIAL');
   await wait("![...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
-  await run("Promise.all([import('edup://console/giga-store.js'),import('edup://console/operations.js')]).then(([store,ops])=>{const view=document.querySelector('#view');view.replaceChildren();store.renderGigaStore(view,{site:'US',available:true,onImported:({codes})=>{window.imported=codes;view.replaceChildren();ops.gigaQueries(view,new Set(codes),{site:'US'}).read();}});})");
+  await run("Promise.all([import('edup://console/giga-store.js'),import('edup://console/operations.js')]).then(([store,ops])=>{const view=document.querySelector('#view');view.replaceChildren();store.renderGigaStore(view,{site:'US',available:true,onImported:({codes})=>{window.imported=codes;view.replaceChildren();ops.gigaQueries(view,new Set(codes),{site:'US',readOnMount:true});}});})");
   await run("document.querySelector('input[aria-label=\"大健店铺名称、编码或网址\"]').value='N616';[...document.querySelectorAll('button')].find(b=>b.textContent==='核对店铺').click()");
   await wait("document.body.textContent.includes('Fixture Store · N616 · 51 件商品')");
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='收藏店铺并导入 SKU').click()");
