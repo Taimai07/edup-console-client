@@ -7,6 +7,7 @@ if ([string]::IsNullOrWhiteSpace($cache) -or ![IO.Path]::IsPathFullyQualified($c
     throw 'Builder cache must be an absolute directory.'
 }
 $assets = @(
+    @{Release='icons@1.2.3'; Name='icons-bundle.tar.gz'; Id=459442159; Sha='4e5bb546c9d3ab0c2bbacc22857467bf415f742a34c2be9dd138779d2fc066f9'},
     @{Release='7zip@1.0.0'; Name='7zip-win-x64.tar.gz'; Id=437402797; Sha='be071f15bd6da2f78fe81c6ddef2009b0c4d8a51f36b780cb806c7e6df95e1b3'},
     @{Release='winCodeSign-2.6.0'; Id=18435274; Sha='cdaec7154dda7cc31f88d886e2489379a0625a737d610b5ae7f62a12f16743a4'},
     @{Release='nsis-3.0.4.1'; Id=16428442; Sha='9877df902530f96357d13a7a31ae2b9df67f48b11ffc9a1700a7c961574ec5fa'},
