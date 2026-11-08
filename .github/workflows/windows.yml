@@ -26,6 +26,8 @@ jobs:
       - run: ./scripts/seed-builder-cache.ps1
         shell: pwsh
       - run: npm run build:win
+        env:
+          DEBUG: electron-builder
       - name: Verify signed application patches and rollback without an installer
         run: |
           node node_modules/electron/install.js
@@ -61,3 +63,4 @@ jobs:
           Get-FileHash "dist/EDUPLINK-Setup-$releaseVersion.exe" -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  EDUPLINK-Setup-$releaseVersion.exe" } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
           gh release create "v$releaseVersion" "dist/EDUPLINK-Setup-$releaseVersion.exe" "dist/EDUPLINK-App-$releaseVersion.eduppatch" "dist/EDUPLINK-App-$releaseVersion.eduppatch.json" dist/SHA256SUMS.txt --target "${{ github.sha }}" --title "自用版本 v$releaseVersion" --notes-file RELEASE-NOTES.md --prerelease
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
