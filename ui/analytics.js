@@ -17,7 +17,27 @@ export function totals(d,site){const rows=entries(d,site);if(!rows.length||d.ope
 export const moneyText=x=>Object.entries(x).map(([c,v])=>`${c} ${number(v)}`).join(' · ')||'—';
 export function salesSeries(d,site,key,span){const buckets=new Map();for(const [,v]of entries(d,site)){for(const b of (span==='today'?v.hourly:v.daily)||[]){const start=b.interval.split('--')[0],label=span==='today'?start:start.slice(0,10),currency=key==='sales'?'USD':key==='units'?'件':'单',id=label;const row=buckets.get(id)||{date:label,currency,value:0};const value=key==='sales'?usd(b.totalSales.amount,b.totalSales.currencyCode,d.fx):key==='units'?b.unitCount:b.orderCount;row.value=row.value===null||value===null?null:row.value+value;buckets.set(id,row);}}
  const days=span==='7'?7:span==='30'?30:0,cutoff=days?bjtDay(new Date(new Date(today()+'T00:00:00+08:00').getTime()-(days-1)*864e5)):'';return [...buckets.values()].filter(x=>!cutoff||x.date>=cutoff).sort((a,b)=>a.date.localeCompare(b.date));}
-export function profitSeries(d,site){return profitView(d,site)?.hourly||[];}
+export function profitSeries(d,site,span='today',start='',end=''){
+ const current=profitView(d,site);
+ if(span==='today'&&!start&&!end)return current?.hourly||[];
+ const history=d.operating?.profit?.history;
+ const daily=new Map((history?.views?.[site]||[]).map(row=>[row.date,row]));
+ const todayKey=today();
+ if(current)daily.set(todayKey,{date:todayKey,currency:'USD',value:current.profitUSD,
+  coveredUnits:current.coveredUnits,totalUnits:current.totalUnits,complete:current.complete});
+ const windowDays=(!start&&!end)&&(span==='7'?7:span==='30'?30:0);
+ const cutoff=windowDays?bjtDay(new Date(Date.parse(todayKey+'T00:00:00+08:00')-(windowDays-1)*864e5)):'';
+ const available=[...daily.keys()].sort();
+ const first=[available[0],start,cutoff].filter(Boolean).sort().at(-1);
+ const last=[todayKey,end].filter(Boolean).sort()[0];
+ if(!available.length||!first||first>last)return [];
+ const rows=[];
+ for(let t=Date.parse(first+'T00:00:00Z');t<=Date.parse(last+'T00:00:00Z');t+=864e5){
+  const date=new Date(t).toISOString().slice(0,10);
+  rows.push(daily.get(date)||{date,currency:'USD',value:null});
+ }
+ return rows;
+}
 export function axisScale(values,target=8){const lo=Math.min(0,...values),hi=Math.max(0,...values),range=hi-lo||1,rough=range/target,pow=10**Math.floor(Math.log10(rough)),n=rough/pow,step=([1,2,2.5,5,10].find(x=>x>=n)||10)*pow,min=Math.floor(lo/step)*step,max=Math.ceil((hi||1)/step)*step;return {min,max,step};}
 export function chart(title,rows,{unit='',note='',start='',end=''}={}){
  const box=card(title,note);box.classList.add('chart-card');const data=rows.filter(r=>(!start||r.date.slice(0,10)>=start)&&(!end||r.date.slice(0,10)<=end));const values=data.filter(r=>Number.isFinite(r.value));

@@ -45,7 +45,30 @@ function controls(parent,platform=false){const tools=el('div',undefined,'toolbar
 function renderDetail(v,key){
  controls(v,key==='sessions'||key==='refunds');
  if(['sales','units','orders'].includes(key)){const series=salesSeries(data,site,key,span);for(const c of new Set(series.map(x=>x.currency)))v.append(chart(names[key]+' · '+c,series.filter(x=>x.currency===c),{unit:key==='sales'?c:key==='units'?'件':'单',start:from,end:to,note:'北京时间口径；'+(key==='sales'?fxNote(data):'鼠标移动查看时间和值。')}));if(!series.length)v.append(card(names[key],'当前没有该范围的可用数据。'));return;}
- if(key==='profit'){const t=totals(data,site);v.append(card('今日总毛利估算',usdText(t.profitUSD)+'。'+t.profitNote),card('计算口径',t.profitBasis||'等待服务器生成；不会在客户端假设成本或补算。'));if(t.profitMissing?.length)v.append(table(['站点','SKU','件数','暂未计入的原因'],t.profitMissing.map(x=>[x.site,x.sku,x.units,x.reasons.join('、')])));if(span==='today')v.append(chart('估算总毛利 · USD',profitSeries(data,site),{unit:'USD',start:from,end:to,note:'服务器按订单时间归集；仅显示有足够成本和费用依据的部分。'}));else v.append(card('历史毛利曲线暂缺','新算法按当日订单及费用估算；历史数据需要逐日重新计算，不能用今日成本反推为已实现利润。'));return;}
+ if(key==='profit'){
+  const t=totals(data,site),profit=data.operating?.profit,history=profit?.history;
+  const current=span==='today'&&!from&&!to;
+  const series=profitSeries(data,site,span,from,to);
+  const stamp=value=>value?String(value).slice(0,16).replace('T',' ')+' 北京时间':'暂无';
+  if(current){
+   v.append(card('今日总毛利估算',usdText(t.profitUSD)+'。'+t.profitNote),
+    card('订单数据截至',profit?.day===today()?stamp(profit.asOf):'等待当天计算'));
+   if(t.profitMissing?.length)v.append(table(['站点','SKU','件数','暂未计入的原因'],t.profitMissing.map(x=>[x.site,x.sku,x.units,x.reasons.join('、')])));
+  }else{
+   const known=series.filter(row=>Number.isFinite(row.value));
+   const coverage=series.filter(row=>Number.isInteger(row.totalUnits));
+   const count=key=>coverage.reduce((sum,row)=>sum+(row[key]||0),0);
+   const estimate=known.length?Math.round(known.reduce((sum,row)=>sum+row.value*100,0))/100:null;
+   v.append(card('所选日期的毛利估算',usdText(estimate)+(coverage.length?'，已覆盖 '+count('coveredUnits')+'/'+count('totalUnits')+' 件。':'。')));
+   if(history)v.append(card('历史数据范围',history.from+' 至 '+history.through+'，更新于 '+stamp(history.generatedAt)
+    +'。当天点位随当天同步更新。'));
+  }
+  const basis=t.profitBasis||'成交净收入减商品成本和平台费用估算。';
+  v.append(card('计算口径',current?basis:basis+' 历史按原订单逐日重估，使用当前确认成本、平台费用估算和参考汇率。'));
+  v.append(chart('估算总毛利 · USD',series,{unit:'USD',start:from,end:to,
+   note:current?'按北京时间和订单时间归集。':'按北京时间日期汇总。缺少数据的日期显示为空。'}));
+  return;
+ }
  if(key==='ads'){v.append(card('暂无广告趋势','等待广告数据接入；不会绘制虚构的0元曲线。'));return;}
  const field=key==='sessions'?'sessions':'refundedUnits';trafficCharts(v,[field]);
 }
