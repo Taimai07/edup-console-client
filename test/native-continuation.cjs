@@ -20,7 +20,7 @@ let pending;
 ipcMain.handle('fixture:browser',(_e,op,args)=>{
  if(op==='giga-browser-folder')return {directory:'fixture-only-extension-folder'};
  if(op==='giga-browser-start'){pending=args;return {id};}
- if(op==='giga-browser-task')return {state:args.id===id?'rates_read':'verified',codes:pending.codes,screenId:id,items:pending.codes.map((sku,i)=>({sku,productId:String(i+1),state:'DETAIL_LOW_ALREADY_SAVED'}))};
+ if(op==='giga-browser-task')return {state:args.id===id?'rates_read':'verified',codes:pending.codes,site:pending.site,screenId:id,items:pending.codes.map((sku,i)=>({sku,productId:String(i+1),state:'DETAIL_LOW_ALREADY_SAVED'}))};
  if(op==='giga-browser-screen')return {excluded:[],task:{id:'22222222-2222-4222-8222-222222222222'}};
  throw Error('UNEXPECTED_BROWSER_CALL');
 });
