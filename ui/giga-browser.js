@@ -78,16 +78,21 @@ export function ensureGigaFavorites(target, input, admit) {
           const codes = scope.codes.slice(offset, offset + batchSize);
           const index = offset / batchSize + 1;
           const update = text => { status.textContent = (count > 1 ? `第 ${index}/${count} 段 · ` : '') + text; };
+          const allowStop = () => {
+            if (stop) return;
+            cancel.disabled = false;
+            cancel.textContent = '完成当前分段后停止';
+          };
           update('正在核验账号并逐款读取商品退货率。');
           const task = await window.edup.maintenance('giga-browser-start', {site: scope.site, codes});
           started = true;
-          if (count > 1 && !stop) {
-            cancel.disabled = false;
-            cancel.textContent = '完成当前分段后停止';
-          }
+          if (count > 1) allowStop();
           const receipt = await checkFavorites(task, active, update);
           if (!active()) break;
-          await admit(receipt, {index, count, update, active, stopRequested: () => stop});
+          if (receipt.codes.length && (receipt.site !== scope.site || receipt.codes.some(sku => !codes.includes(sku)))) {
+            throw Error('GIGA_BROWSER_RECEIPT_SCOPE_MISMATCH');
+          }
+          await admit(receipt, {index, count, update, active, allowStop, stopRequested: () => stop});
           if (!active()) break;
           processed += codes.length;
           if (index < count && active() && !stop) {

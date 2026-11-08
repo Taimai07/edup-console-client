@@ -58,9 +58,11 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
   activeGigaQueue=true;
   starting=true;running=true;history.disabled=true;updateButtons();screeningResults.replaceChildren();
   progress.replaceChildren();
-  let admitted=false, pendingJob=false;
+  let admitted=false, pendingJob=false, sentUnconfirmed=[];
+  const screenExcluded=new Set();
   try{
    const result=await ensureGigaFavorites(progress,{site,codes:batchCodes},async(receipt,part)=>{
+    for(const row of receipt.excluded)screenExcluded.add(row.sku);
     if(receipt.excluded.length)screeningResults.append(table(['商品编码','详情退货率筛选'],receipt.excluded.map(row=>[
       row.sku,row.state==='RETURN_RATE_NOT_LOW'?'未标注低退货率，排除':'详情页退货率无法核实，暂停'
     ])));
@@ -69,15 +71,28 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
     const accepted=new Set(receipt.codes);
     const browserScreen={id:receipt.screenId,site,items:receipt.items.filter(row=>accepted.has(row.sku))};
     part.update('收藏已核对，正在向服务器发送本段任务。');
+    const remember=id=>{
+     lastGigaJob=parentJobId||id;signature='';
+     if(!parentJobId){
+      const entry={id,created:Date.now()/1000,codes:receipt.codes,site};
+      sessionGigaJobs.set(id,entry);addHistory(entry);
+     }
+     history.value=lastGigaJob;
+    };
     let job;
     const rateRetryDeadline=Date.now()+45*60*1000;
     while(!job){
      try{
       job=await businessCall(op,{codes:receipt.codes,requestId,site,...(op==='giga_prepare'?{browserScreen}:{}),...(parentJobId?{parentJobId}:{})});
+      if(!job?.id)throw Error('GIGA_ADMISSION_RECEIPT_INVALID');
      }catch(error){
-      const unknown=error.outcome==='unknown'||String(error.message).includes('OUTCOME_UNKNOWN');
-      if(unknown){pendingJob=true;lastGigaJob=parentJobId||requestId;signature='';}
-      if(unknown||!String(error.message).includes('GIGA_QUERY_RATE_LIMIT')||Date.now()>=rateRetryDeadline)throw error;
+      const limited=!String(error.message).includes('OUTCOME_UNKNOWN')&&error.outcome!=='unknown'&&String(error.message).includes('GIGA_QUERY_RATE_LIMIT');
+      if(!limited){
+       pendingJob=true;sentUnconfirmed=receipt.codes;remember(requestId);
+       throw Object.assign(error,{outcome:'unknown'});
+      }
+      if(Date.now()>=rateRetryDeadline)throw error;
+      part.allowStop();
       part.update('服务器达到频率限制，等一分钟再检查。');
       const nextTry=Date.now()+60000;
       while(part.active()&&!part.stopRequested()&&Date.now()<nextTry){
@@ -86,13 +101,8 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
       if(!part.active()||part.stopRequested())throw error;
      }
     }
-    admitted=true;pendingJob=true;
-    lastGigaJob=parentJobId||job.rootJobId||job.id;signature='';
-    if(!parentJobId){
-     const entry={id:lastGigaJob,created:job.created||Date.now()/1000,codes:receipt.codes,site};
-     sessionGigaJobs.set(entry.id,entry);addHistory(entry);
-    }
-    history.value=lastGigaJob;
+    admitted=true;pendingJob=true;sentUnconfirmed=receipt.codes;
+    remember(job.rootJobId||job.id);
     if(part.count===1)return;
     part.update('服务器正在处理本段，完成后才开始下一段。');
     while(part.active()&&['queued','running'].includes(job.state)){
@@ -100,8 +110,10 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
      if(!part.active())return;
      job=await businessCall('giga_job',{id:job.id});
     }
+    if(!part.active())return;
     pendingJob=false;
     if(job.state!=='completed')throw Error(job.result?.code||'GIGA_SEGMENT_FAILED');
+    sentUnconfirmed=[];
     const summary=el('section');
     summary.append(el('p','第 '+part.index+'/'+part.count+' 段完成 · '+receipt.codes.length+' 款'));
     if(op==='giga_query'&&job.result?.products?.length)summary.append(quoteTables(job.result.products));
@@ -110,13 +122,20 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
    running=pendingJob;
    if(result.cancelled)return;
    if(result.remaining.length){
-    const hold=el('section',undefined,'operation-preview'), details=el('details');
-    hold.append(el('h3','分段处理已暂停'),el('p','已处理 '+result.processed+' 款，剩余 '+result.remaining.length+' 款尚未确认完成。'));
+    const hold=el('section',undefined,'operation-preview');
+    hold.append(el('h3','分段处理已暂停'),el('p','已处理 '+result.processed+' 款。'));
     if(result.error){
      const errorBox=el('div');message(errorBox,friendlyError(result.error));hold.append(errorBox);
     }
-    details.append(el('summary','查看未确认完成的 SKU'),el('pre',result.remaining.join('\n')));
-    hold.append(details);screeningResults.append(hold);
+    const sent=new Set(sentUnconfirmed);
+    const unsent=result.remaining.filter(sku=>!sent.has(sku)&&!screenExcluded.has(sku));
+    for(const [label,skus] of [['已发送或发送结果待核对，请先查看历史批次',sentUnconfirmed],['尚未发送给服务器的 SKU',unsent]]){
+     if(!skus.length)continue;
+     const details=el('details');
+     details.append(el('summary',label+'（'+skus.length+' 款）'),el('pre',skus.join('\n')));
+     hold.append(details);
+    }
+    screeningResults.append(hold);
    }else if(!admitted){
     progress.append(el('p','本批没有通过退货率检查的商品。'));
    }
