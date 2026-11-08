@@ -23,6 +23,8 @@ jobs:
       - run: npm test
       - run: node test/publication-status.test.cjs
       - run: node test/continuation.test.cjs
+      - run: ./scripts/seed-builder-cache.ps1
+        shell: pwsh
       - run: npm run build:win
       - name: Verify signed application patches and rollback without an installer
         run: |
