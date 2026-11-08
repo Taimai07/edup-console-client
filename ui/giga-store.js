@@ -13,6 +13,7 @@ const messages = {
   STORE_SEARCH_TOO_BROAD: '店铺名称的候选过多，请改用店铺编码或网址。',
   STORE_RECONNECT_AND_RESOLVE: '买家连接已变化，请重新核对这家店铺。',
   STORE_CATALOG_CHANGED: '店铺商品清单在读取时发生变化，请重新核对店铺后读取。',
+  STORE_CATALOG_EMPTY: '当前买家地区下没有可导入的商品。',
   STORE_CATALOG_PAGE_UNVERIFIED: '这一页的商品清单未能完整核对，请稍后重新读取。',
   STORE_PRODUCT_SCOPE_MISMATCH: '发现无法确认属于这家店铺的商品，导入已暂停。',
   STORE_FAVORITE_RECONCILIATION_REQUIRED: '店铺收藏结果待核对，请先到大健确认收藏状态。',
@@ -61,7 +62,7 @@ export function renderGigaStore(target, {site, available, onImported}) {
   };
   input.oninput = reset;
 
-  async function run(action, args) {
+  async function run(action, args, timeout = 120000) {
     let task;
     // The bridge resumes heartbeats after the previous page finishes.
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -74,7 +75,7 @@ export function renderGigaStore(target, {site, available, onImported}) {
         await wait(1000);
       }
     }
-    const deadline = Date.now() + 120000;
+    const deadline = Date.now() + timeout;
     while (active() && Date.now() < deadline) {
       const receipt = await window.edup.maintenance('giga-browser-task', {id: task.id});
       if (receipt.state === 'stopped') throw Error(receipt.code);
@@ -119,7 +120,9 @@ export function renderGigaStore(target, {site, available, onImported}) {
       const codes = await collectStore(store, page => run('page', {ticket: store.id, page}),
         (done, total) => { status.textContent = '已核对 ' + done + ' / ' + total + ' 个 SKU。'; }, active);
       if (!active()) return;
-      const saved = await run('save', {ticket: store.id});
+      status.textContent = '正在复核清单和店铺收藏状态…';
+      const timeout = Math.min(1500000, 120000 + Math.ceil(store.total / store.pageSize) * 5000);
+      const saved = await run('save', {ticket: store.id}, timeout);
       if (saved.state !== 'store_saved' || saved.saved !== true) throw Error('STORE_FAVORITE_RECONCILIATION_REQUIRED');
       if (active()) onImported({store: store.store, codes});
     } catch (error) {

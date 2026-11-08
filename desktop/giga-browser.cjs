@@ -159,11 +159,20 @@ class GigaBrowser {
         throw Error('STORE_RECONNECT_AND_RESOLVE');
       if (action === 'page' && (!Number.isSafeInteger(page) || page < 1 || page > Math.ceil(resolved.total / resolved.pageSize)))
         throw Error('STORE_PAGE_INVALID');
-      fields = {ticket, ...(action === 'page' ? {page} : {})};
+      fields = {ticket, ...(action === 'page' ? {page} : {allowWrite: this.storeWriteAllowed(site, resolved.store.id)})};
       scope = {...scope, store: resolved.store, total: resolved.total, pageSize: resolved.pageSize};
     } else throw Error('STORE_ACTION_INVALID');
     const task = this.issueTask({op: 'store', site, action, ...fields}, scope);
     return {id: task.id, state: 'waiting_for_browser', site};
+  }
+  storeWriteAllowed(site, id) {
+    const names = fs.readdirSync(this.root()).filter(name => /^[a-f0-9-]{36}\.client-task\.json$/.test(name));
+    const previous = names.map(name => this.read(name)).filter(task => task?.op === 'store' && task.action === 'save' &&
+      task.site === site && task.store?.id === id && this.read(task.id + '.dispatch.json'))
+      .sort((a,b) => b.expiresAt - a.expiresAt)[0];
+    if (!previous) return true;
+    const prior = this.read(previous.id + '.result.json');
+    return !!prior && this.storeReceipt(previous, prior.result).state === 'store_saved';
   }
   storeReceipt(task, result) {
     const states = {resolve: ['STORE_RESOLVED', 'store_resolved'], page: ['STORE_PAGE_READ', 'store_page_read'],
