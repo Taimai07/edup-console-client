@@ -107,13 +107,14 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
   progress.replaceChildren();
   let admitted=false, pendingJob=false, sentUnconfirmed=[];
   const screenExcluded=new Set();
+  const reverifyOnly=op==='giga_reverify';
   try{
    const result=await ensureGigaFavorites(progress,{site,codes:batchCodes,reuse:op==='giga_prepare'},async(receipt,part)=>{
     for(const row of receipt.excluded)screenExcluded.add(row.sku);
     if(receipt.excluded.length)screeningResults.append(table(['商品编码','详情退货率筛选'],receipt.excluded.map(row=>[
       row.sku,row.state==='RETURN_RATE_NOT_LOW'?'退货率不符合低或 N/A，排除':'详情页退货率无法核实，暂停'
     ])));
-    if(!receipt.codes.length)return;
+    if(reverifyOnly||!receipt.codes.length)return;
     const requestId=crypto.randomUUID();
     const accepted=new Set(receipt.codes);
     const browserScreen={id:receipt.screenId,site,items:receipt.items.filter(row=>accepted.has(row.sku))};
@@ -174,8 +175,9 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
    if(verificationRequired?.length){
     const hold=el('section',undefined,'operation-preview');
     hold.append(el('h3','请先读取待核验商品的云仓资料'),
-     el('p','以下 '+verificationRequired.length+' 款缺少有效收藏回执。请先用「读取云仓详情、报价和库存」核验，再回到当前入口。'),
-     el('pre',verificationRequired.join('\n')));
+     el('p','以下 '+verificationRequired.length+' 款的收藏回执已过期或不可用。可以直接读取并核验这几款，原批次和已有商品资料会保留。'),
+     el('pre',verificationRequired.join('\n')),
+     button('读取并核验这 '+verificationRequired.length+' 款',()=>start('giga_reverify',verificationRequired)));
     screeningResults.append(hold);
     if((admitted||pendingJob)&&target.isConnected){starting=false;await refresh();}
     return;
@@ -195,6 +197,9 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
      hold.append(details);
     }
     screeningResults.append(hold);
+   }else if(reverifyOnly&&result.processed>screenExcluded.size){
+    const count=result.processed-screenExcluded.size;
+    progress.append(el('p','已更新 '+count+' 款的收藏回执。'+(screenExcluded.size?'可以逐款继续检查已通过核验的商品。':'请再次点击刚才的准备或续检按钮。')));
    }else if(!admitted){
     progress.append(el('p','本批没有通过退货率检查的商品。'));
    }
@@ -205,7 +210,7 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
  };
  const query=button('读取云仓详情、报价和库存',()=>start('giga_query')),prepare=button('AI准备并检查上架',()=>start('giga_prepare')),resume=button('继续检查本批（复用已有结果）',async()=>{const value=continuation(currentJob);if(!value.rootId||!value.codes.length)throw Error('没有可继续检查的商品');await start('giga_prepare',value.codes,value.rootId);});updateButtons();actions.append(query,prepare,resume,button('刷新结果',refresh));target.append(actions,historyLabel,progress,screeningResults,bulk,results,review,materials,report,chat);
 
- history.onchange=()=>{if(history.value){currentJob=null;updateButtons();lastGigaJob=history.value;signature='';quoteKey='';quoteGeneration++;bulk.replaceChildren();review.replaceChildren();materials.replaceChildren();refresh();}};
+ history.onchange=()=>{if(history.value){currentJob=null;updateButtons();lastGigaJob=history.value;signature='';quoteKey='';quoteGeneration++;screeningResults.replaceChildren();bulk.replaceChildren();review.replaceChildren();materials.replaceChildren();refresh();}};
 
  for(const entry of sessionGigaJobs.values())if(entry.site===site)addHistory(entry);
  businessCall('batch_chat_list').then(r=>{for(const b of r.batches)addHistory(b);if(!lastGigaJob&&r.batches.length)lastGigaJob=r.batches[0].id;if(lastGigaJob){history.value=lastGigaJob;refresh();}}).catch(()=>{});

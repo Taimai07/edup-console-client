@@ -16,12 +16,23 @@ ipcMain.handle('fixture:call',async(_e,op,args)=>{calls.push({op,args});
  if(op==='giga_prepare'){if(args.parentJobId!==id||args.codes.join(',')!=='WTEST1,WTEST2')throw Error('WRONG_RESUME_SCOPE');resumed=true;return {id:'22222222-2222-4222-8222-222222222222',rootJobId:id,state:'queued'};}
  throw Error('UNEXPECTED_FIXTURE_OPERATION:'+op);
 });
-let reuseReady=false;
+let reuseReady=false, readScope;
 ipcMain.handle('fixture:browser',(_e,op,args)=>{
  if(op==='giga-browser-reuse'){
   if(!reuseReady)return {receipts:[],missing:args.codes};
   return {missing:[],receipts:[{codes:args.codes,site:args.site,screenId:id,excluded:[],
     items:args.codes.map((sku,i)=>({sku,productId:String(i+1),state:'DETAIL_LOW_ALREADY_SAVED'}))}]};
+ }
+ if(op==='giga-browser-folder')return {directory:'C:/fixture'};
+ if(op==='giga-browser-start'){
+  if(args.site!=='US'||args.codes.join(',')!=='WTEST1,WTEST2')throw Error('WRONG_REVERIFY_SCOPE');
+  readScope=args.codes;
+  return {id};
+ }
+ if(op==='giga-browser-task'&&readScope){
+  reuseReady=true;
+  return {state:'verified',codes:readScope,site:'US',screenId:id,
+    items:readScope.map((sku,i)=>({sku,productId:String(i+1),state:'DETAIL_LOW_ALREADY_SAVED'}))};
  }
  throw Error('UNEXPECTED_BROWSER_CALL');
 });
@@ -50,11 +61,17 @@ app.whenReady().then(async()=>{
  await wait("document.body.textContent.includes('请先读取待核验商品的云仓资料')");
  if(resumed||await run("[...document.querySelectorAll('button')].some(x=>x.textContent==='已打开，检查并继续')"))
   throw Error('RESUME_MISSING_EVIDENCE_OPENED_BROWSER_PROMPT');
- reuseReady=true;
+ await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='读取并核验这 2 款').click()");
+ await wait("!![...document.querySelectorAll('button')].find(x=>x.textContent==='已打开，检查并继续')");
+ await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='已打开，检查并继续').click()");
+ await wait("document.body.textContent.includes('已更新 2 款的收藏回执')");
+ if(resumed||calls.some(x=>x.op==='giga_query')||
+    !await run("document.querySelector('select[aria-label=历史上架批次]').value==='11111111-1111-4111-8111-111111111111'"))
+  throw Error('REVERIFY_CHANGED_BATCH_OR_STARTED_PREPARATION');
  await run("[...document.querySelectorAll('button')].find(x=>x.textContent==='继续检查本批（复用已有结果）').click()");
  for(let i=0;i<50&&!resumed;i++)await new Promise(r=>setTimeout(r,100));
  if(!resumed||!calls.some(x=>x.op==='batch_material_save'&&x.args.jobId===id&&x.args.sku==='WTEST1')||!calls.some(x=>x.op==='batch_chat_send'&&x.args.jobId===id))throw Error('MATERIAL_OR_RESUME_FLOW_FAILED');
  if(await run("[...document.querySelectorAll('button')].some(x=>x.textContent==='已打开，检查并继续')"))
   throw Error('RESUME_WITH_EVIDENCE_OPENED_BROWSER_PROMPT');
- clearTimeout(limit);save({passed:true,nativeProtocol:true,emptyInputHistoryResume:true,materialEditBoundToOriginalBatch:true,noBrowserPromptOnResume:true,modelAndPlatformCalls:0,userWindowTouched:false,...before});w.destroy();app.exit(0);
+ clearTimeout(limit);save({passed:true,nativeProtocol:true,emptyInputHistoryResume:true,materialEditBoundToOriginalBatch:true,noBrowserPromptOnResume:true,reverifiedOriginalScope:true,modelAndPlatformCalls:0,userWindowTouched:false,...before});w.destroy();app.exit(0);
 }).catch(e=>{clearTimeout(limit);save({passed:false,error:e.message});app.exit(1)});
