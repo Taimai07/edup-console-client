@@ -22,6 +22,7 @@ jobs:
       - run: npm run prepare-assets
       - run: node -e "if (require('./package.json').version !== require('./shared/protocol.cjs').VERSION) process.exit(1)"
       - run: npm test
+      - run: node --test test/sku-lists.test.cjs
       - run: node test/publication-status.test.cjs
       - run: node test/continuation.test.cjs
       - run: ./scripts/seed-builder-cache.ps1

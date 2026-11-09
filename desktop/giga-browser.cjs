@@ -179,16 +179,24 @@ class GigaBrowser {
     this.write('request.json', task);
     return task;
   }
-  reconcileFavorites() {
-    const prior=this.read('request.json');
-    if(!prior || prior.op!=='favorites' || !this.read(prior.id+'.dispatch.json') || this.read(prior.id+'.result.json'))
+  reconcileFavorites(sourceId) {
+    if (sourceId !== undefined && (typeof sourceId !== 'string' || !/^[a-f0-9-]{36}$/.test(sourceId)))
+      throw Error('GIGA_BROWSER_TASK_ID_INVALID');
+    const prior=sourceId ? this.read(sourceId+'.client-task.json') : this.read('request.json');
+    if(!prior || prior.op!=='favorites' || !this.read(prior.id+'.dispatch.json'))
       throw Error('GIGA_FAVORITE_RECONCILIATION_NOT_REQUIRED');
+    const saved=this.read(prior.id+'.result.json');
+    const skus=saved
+      ? (this.productReceipt(prior,saved.result).excluded || []).filter(row=>row.reason==='RECONCILIATION_PENDING').map(row=>row.sku)
+      : prior.skus;
+    if (!skus.length) throw Error('GIGA_FAVORITE_RECONCILIATION_NOT_REQUIRED');
     const previous=this.read(prior.id+'.client-task.json');
     const status=this.requireConnection(prior.site);
     if(!previous?.screenId || !status.accountScopeV2 || !prior.buyerSalt || !prior.expectedBuyerHash)
       throw Error('GIGA_BUYER_SCOPE_REQUIRED');
-    const {id,expiresAt,...fields}=prior;
-    const task=this.issueTask({...fields,reconcileOnly:true},{screenId:previous.screenId,reconciles:id});
+    const approved=Object.fromEntries(skus.map(sku=>[sku,prior.approved[sku]]));
+    const task=this.issueTask({op:'favorites',site:prior.site,skus,approved,buyerSalt:prior.buyerSalt,
+      expectedBuyerHash:prior.expectedBuyerHash,reconcileOnly:true},{screenId:previous.screenId,reconciles:prior.id});
     return {id:task.id,state:'waiting_for_browser',site:task.site,codes:task.skus};
   }
   startStore({site, action, input, ticket, page} = {}) {

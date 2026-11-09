@@ -1,6 +1,7 @@
 import './human-report.js';
 
-import {ensureGigaFavorites,favoriteEvidenceText} from './giga-browser.js';
+import {ensureGigaFavorites,favoriteEvidenceText,reconcileGigaFavorites} from './giga-browser.js';
+import {skuListPanel,renderModelUsage} from './giga-lists.js';
 import {openSegmentJournal} from './giga-segment-journal.js';
 
 import {materialEditor} from './materials.js';
@@ -18,7 +19,7 @@ export async function businessCall(op,args={}){if(window.edup?.ai)return window.
 
 function button(label,work){const b=el('button',label);b.onclick=async()=>{b.disabled=true;try{await work();}catch(e){notify(friendlyError(e));}finally{b.disabled=b.dataset.locked==='true';}};return b;}
 
-const stateName={queued:'已排队',running:'正在处理',executing:'正在提交',submitted:'已提交处理',accepted:'平台已接收，等待核对',verified:'目标字段已匹配',rejected:'平台未接受',completed:'读取完成',failed:'读取失败',interrupted:'服务重启中断',needs_reconciliation:'结果需要核对，暂勿重复提交',preflight_blocked:'提交前检查未通过'};
+const stateName={queued:'已排队',running:'正在处理',executing:'正在提交',submitted:'已提交处理',accepted:'平台已接收，等待核对',verified:'目标字段已匹配',rejected:'平台未接受',completed:'读取完成',failed:'读取失败',interrupted:'服务重启中断',not_sent:'未发出（可以放心重试）',needs_reconciliation:'结果需要核对，暂勿重复提交',preflight_blocked:'提交前检查未通过'};
 
 export function publicationExplanation(submission){const r=submission?.result||{},code=r.code||r.platform?.reason||r.platform?.code||'';if(code==='PRICING_RULE_CHANGED_REPREPARE')return friendlyError(code).message;if(['PREVIEW_PROGRAM_FAILED','PREVIEW_CHECK_FAILED','PRE_SUBMIT_PROGRAM_ERROR','SUBMISSION_REQUIRES_CHECK'].includes(code))return '上架程序检查未完成，本商品尚未提交。现有资料已保留，不需要你补商品资料；请等待修复后恢复。';if(/PRICE_DRIFT/.test(code))return '云仓采购价或配送报价发生变化，本商品未提交。请重新准备，核对新售价后再提交。';if(/STOCK_DRIFT/.test(code))return '最新库存与本次确认条件不符，本商品未提交。请重新读取库存并核对。';if(/OWNER_FACTS|DETAIL_DRIFT/.test(code))return '商品资料在确认后发生变化，本商品未提交。请重新检查并核对。';if(/VALIDATION/.test(code))return '亚马逊预检未通过，本商品未提交。请查看具体问题并重新检查。';return '本商品的提交前检查未通过，现有资料已保留。请查看处理说明；不会自动重复提交。';}
 
@@ -88,10 +89,12 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
 
  const screeningResults=el('section'),history=el('select'),historyLabel=el('label','历史上架批次 '),chat=el('section'),materials=el('section'),progress=el('section'),bulk=el('section',undefined,'operation-preview'),results=el('div'),report=el('section',undefined,'operation-preview'),review=el('section',undefined,'operation-preview'),actions=el('div',undefined,'toolbar');history.setAttribute('aria-label','历史上架批次');historyLabel.append(history);history.append(el('option','选择历史批次'));
  const buyerReviews=el('section',undefined,'operation-preview');buyerReviews.hidden=true;
+ const modelUsage=el('section',undefined,'operation-preview');
  const refreshBuyerReviews=async()=>{
   if(site!=='US'||offline)return;
   const value=await businessCall('service_status');
   if(!target.isConnected)return;
+  renderModelUsage(modelUsage,value.modelUsage);
   const rows=value?.giga?.buyerReviews||[];
   buyerReviews.replaceChildren();buyerReviews.hidden=!rows.length;
   if(rows.length)buyerReviews.append(el('h3','待核对买家页面'));
@@ -117,7 +120,7 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
  };
  const refresh=async()=>{if(starting||!lastGigaJob)return;if(polling){refreshPending=true;return;}polling=true;const requestedJob=lastGigaJob;try{const r=await businessCall('giga_job',{id:requestedJob});if(starting||lastGigaJob!==requestedJob)return;connected=true;currentJob=r;running=['queued','running'].includes(r.state);updateButtons();const nextSignature=JSON.stringify([r.id,r.state,r.result,r.childJobs,r.submissions,connected,siteAvailable,siteChecking]);if(nextSignature===signature)return r.state;signature=nextSignature;renderProgress(progress,r);const mode=r.preparationMode||r.result?.preparationMode;if(mode==='ai_workflow')showChat(r.rootJobId||r.id);const items=r.result?.pipeline?.items||[];results.replaceChildren();submitRows.length=0;if(r.result?.products)results.append(quoteTables(r.result.products));const quoteHolds=(r.result?.products||[]).filter(x=>x.quoteScreen);if(quoteHolds.length)results.append(table(['采购筛选','结果'],quoteHolds.map(x=>[x.code,x.quoteScreen==='GIGA_LANDED_QUOTE_OVER_3000_USD'?'采购单价加配送费超过 3,000 USD，排除':'报价或币种待核实，暂停'])));
 
- const byCode=new Map((r.result?.products||[]).map(x=>[x.code,x]));const products=[...new Set([...(r.codes||[]),...byCode.keys()])].map(code=>byCode.get(code)||{code});for(const product of products){const submission=(r.submissions||[]).flatMap(x=>x.items||[]).filter(x=>x.sku===product.code).at(-1);const item=items.find(x=>x.sku===product.code)||{},issue=itemIssue(item,mode),row=el('section',undefined,'listing-action-row'+(issue.level==='error'||['needs_review','needs_reconciliation','rejected'].includes(submission?.state)?' has-error':'')),heading=el('div',undefined,'toolbar');heading.append(el('strong',product.code),el('span',submission?({queued:'等待后台检查',checking:'正在核对提交条件',submitting:'正在提交',accepted:'亚马逊已接收',verified:'已核对',needs_review:'暂停，请查看原因',needs_reconciliation:'提交结果待核对',rejected:'亚马逊未接受'}[submission.state]||submission.state):issue.title,'tag'));
+ const byCode=new Map((r.result?.products||[]).map(x=>[x.code,x]));const products=[...new Set([...(r.codes||[]),...byCode.keys()])].map(code=>byCode.get(code)||{code});for(const product of products){const submission=(r.submissions||[]).flatMap(x=>x.items||[]).filter(x=>x.sku===product.code).at(-1);const item=items.find(x=>x.sku===product.code)||{},issue=itemIssue(item,mode),row=el('section',undefined,'listing-action-row'+(issue.level==='error'||['needs_review','needs_reconciliation','rejected'].includes(submission?.state)?' has-error':'')),heading=el('div',undefined,'toolbar');heading.append(el('strong',product.code),el('span',submission?({queued:'等待后台检查',checking:'正在核对提交条件',submitting:'正在提交',accepted:'亚马逊已接收',verified:'已核对',needs_review:'暂停，请查看原因',not_sent:'未发出（可以放心重试）',needs_reconciliation:'提交结果待核对',rejected:'亚马逊未接受'}[submission.state]||submission.state):issue.title,'tag'));
 
  const submit=button('提交到亚马逊',async()=>{review.replaceChildren();const p=await businessCall('proposal_prepare',{action:{target:'giga',operation:'giga_import',site,sku:product.code,value:product.code,batchJobId:r.rootJobId||r.id,reason:'用户从商品列表核对并提交；先显示价格和库存，确认后才正式提交'}});proposalCard(review,p);if(p.state==='preparing'&&p.jobId){lastGigaJob=r.rootJobId||r.id;signature='';await refresh();}});submit.classList.add('primary-action');submit.disabled=!connected||!siteAvailable||!issue.ready||!!submission;heading.append(submit);row.append(heading);
 
@@ -168,6 +171,18 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
     if(receipt.excluded.length)screeningResults.append(table(['商品编码','详情退货率筛选'],receipt.excluded.map(row=>[
       row.sku,favoriteEvidenceText(row.rate||row.reason||row.state)
     ])));
+    if(receipt.id&&receipt.excluded.some(row=>row.reason==='RECONCILIATION_PENDING')){
+     const review=el('section',undefined,'operation-preview'),status=el('p','部分收藏待核对。');
+     let receiptId=receipt.id;
+     const retry=button('再试一次',async()=>{
+      if(starting){status.textContent='请等当前分组处理结束再核对。';return;}
+      const checked=await reconcileGigaFavorites(receiptId,()=>review.isConnected,text=>{status.textContent=text;});
+      receiptId=checked.id;
+      status.textContent=checked.excluded.length?'部分收藏仍待核对。':'收藏状态已核对，可继续原流程。';
+      retry.hidden=!checked.excluded.some(row=>row.reason==='RECONCILIATION_PENDING');
+     });
+     review.append(status,retry);screeningResults.append(review);
+    }
     if(reverifyOnly||!receipt.codes.length)return;
     const segment=part.codes.join(',');
     const requestId=journal.reserve(segment,receipt.codes);
@@ -275,7 +290,10 @@ export function gigaQueries(target,codes,{offline=false,site='US',siteAvailable=
  history.onchange=()=>{if(history.value){currentJob=null;updateButtons();lastGigaJob=history.value;signature='';quoteKey='';quoteGeneration++;screeningResults.replaceChildren();bulk.replaceChildren();review.replaceChildren();materials.replaceChildren();refresh();}};
 
  for(const entry of sessionGigaJobs.values())if(entry.site===site)addHistory(entry);
- target.append(buyerReviews);refreshBuyerReviews().catch(()=>{});
+ target.append(buyerReviews,skuListPanel({call:businessCall,site,offline:offline||!siteAvailable,
+  onResume:list=>start('giga_prepare',list)}),modelUsage);
+ renderModelUsage(modelUsage,null);
+ refreshBuyerReviews().catch(()=>{});
  businessCall('batch_chat_list').then(r=>{for(const b of r.batches)addHistory(b);if(!lastGigaJob&&r.batches.length)lastGigaJob=r.batches[0].id;if(lastGigaJob){history.value=lastGigaJob;refresh();}}).catch(()=>{});
  const timer=setInterval(()=>{if(!target.isConnected){clearInterval(timer);closeChat?.();return;}updateButtons();if(lastGigaJob)refresh();},5000);
 

@@ -12,7 +12,7 @@ const {ProtectedState}=require('./state.cjs');
 const {extractCodes,fileText,importCodes}=require('./import.cjs');
 const {UpdateController}=require('./update-controller.cjs');
 const {template:menuTemplate}=require('./menu.cjs');
-const {validateAIRequest}=require('../shared/ai-contract.cjs');
+const {validateAIRequest,SKU_LIST_READONLY}=require('../shared/ai-contract.cjs');
 const {GigaBrowser}=require('./giga-browser.cjs');
 const gigaBrowser=new GigaBrowser();
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
@@ -70,7 +70,7 @@ app.whenReady().then(async()=>{
    if(!r.ok)throw Error((data.code||'HTTP_'+r.status)+(data.outcome==='unknown'?' OUTCOME_UNKNOWN':'')+(data.requestId?' / '+data.requestId:''));
    if(route==='health'&&data.apiVersion!==API_VERSION)throw Error('API_INCOMPATIBLE');
    return data;
-  }catch(e){const readonly=new Set(['status','service_status','giga_job','giga_report','thread_read','thread_list','run_read','batch_chat_read','batch_chat_list','batch_material_list','batch_material_read','file_list','file_read','memory_list','memory_read']);if(!responseReceived&&method==='POST'&&route==='ai'&&!readonly.has(body?.op)&&!e.message.includes('OUTCOME_UNKNOWN'))e=Error(e.message+' OUTCOME_UNKNOWN');logger.writeError('api_failed',e,{route,durationMs:Date.now()-start});throw e;}
+  }catch(e){const readonly=new Set(['status','service_status','giga_job','giga_report','thread_read','thread_list','run_read','batch_chat_read','batch_chat_list','batch_material_list','batch_material_read','file_list','file_read','memory_list','memory_read',...SKU_LIST_READONLY]);if(!responseReceived&&method==='POST'&&route==='ai'&&!readonly.has(body?.op)&&!e.message.includes('OUTCOME_UNKNOWN'))e=Error(e.message+' OUTCOME_UNKNOWN');logger.writeError('api_failed',e,{route,durationMs:Date.now()-start});throw e;}
  });}
  const diagnosticsUpload=new DiagnosticsUpload({dir:userDir,logger,send:request,paired:()=>config.paired});diagnosticsUpload.start();app.on('before-quit',()=>diagnosticsUpload.close());
  ipcMain.handle('edup:request',async(event,route,body)=>{checkSender(event);if(installing&&body!==undefined)throw Error('UPDATE_INSTALLING');if(!['snapshot','health','drafts','diagnostics'].includes(route)||(route==='drafts')!==(body!==undefined))throw Error('IPC_ROUTE_INVALID');return request(route,body);});
@@ -94,7 +94,7 @@ app.whenReady().then(async()=>{
   if(action==='giga-browser-start')return gigaBrowser.start(arg);
   if(action==='giga-store-start')return gigaBrowser.startStore(arg);
   if(action==='giga-browser-task')return gigaBrowser.task(arg?.id);
-  if(action==='giga-browser-reconcile')return gigaBrowser.reconcileFavorites();
+  if(action==='giga-browser-reconcile')return gigaBrowser.reconcileFavorites(arg?.id);
   if(action==='giga-open-buyer-page'){
    if(typeof arg?.asin!=='string'||!/^[A-Z0-9]{10}$/.test(arg.asin))throw Error('GIGA_BUYER_PAGE_INVALID');
    await shell.openExternal('https://www.amazon.com/dp/'+arg.asin);return {requested:true};

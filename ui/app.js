@@ -2,6 +2,7 @@ import {extractCodes} from './sku-rules.js';
 import {renderWorkspace} from './workspace-v2.js';
 import {productEditor,gigaQueries,businessCall} from './operations.js';
 import {renderGigaStore} from './giga-store.js';
+import {backupSkuList} from './giga-lists.js';
 import {renderMaintenance} from './maintenance.js';
 import {mountAI} from './ai-host.js';
 import {syncStatus,notify,message as feedback,friendlyError} from './notices.js';
@@ -102,17 +103,19 @@ function reports(v){
  if(report==='compliance'){v.append(card('年度合规固定费用','人民币 '+number(data.compliance.annual_total)+' 元／年。属于经营固定费用，按用户提供的年度清单；不放在首页当作当天经营指标。'));return;}
 }
 function giga(v){
+ const recordImport=(value,source,importSite)=>{const codes=value.items.map(item=>item.code);return {...value,backup:codes.length?backupSkuList(businessCall,{site:importSite,source,codes,store:value.store}):null};};
  const box=card('批量识别云仓商品编码','可以粘贴带说明的整段文字，或选择TXT、CSV、TSV、DOCX、XLS、XLSX。自动匹配以 W 开头的云仓编码，如 W123P456789、W1234P567890、W9999S00001。核对后再创建任务。'),input=el('textarea');input.placeholder='例如：商品编码：W1234P567890，另一个是 W9999S00001';input.value=gigaText;input.oninput=()=>gigaText=input.value;
- const tools=el('div',undefined,'toolbar'),extract=el('button','识别文字中的编码'),file=el('button','从文档识别'),result=el('div');extract.onclick=async()=>{try{extraction=window.edup?.maintenance?await window.edup.maintenance('extract-codes',{text:gigaText}):extractCodes(gigaText);selected=new Set(extraction.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
+ const tools=el('div',undefined,'toolbar'),extract=el('button','识别文字中的编码'),file=el('button','从文档识别'),result=el('div');extract.onclick=async()=>{const importSite=gigaSite;try{const value=window.edup?.maintenance?await window.edup.maintenance('extract-codes',{text:gigaText}):extractCodes(gigaText);extraction=recordImport(value,'paste',importSite);selected=new Set(extraction.items.map(x=>x.code));render();}catch(e){result.textContent=e.message;}};
  file.disabled=!window.edup?.maintenance;
  file.onclick=async()=>{
+  const importSite=gigaSite;
   file.disabled=true;
   extract.disabled=true;
   result.textContent='正在本机识别文档中的编码…';
   try{
    const r=await window.edup.maintenance('extract-document');
    if(r.canceled){result.textContent='';return;}
-   extraction=r;
+   extraction=recordImport(r,'file',importSite);
    selected=new Set(r.items.map(x=>x.code));
    render();
   }catch(e){result.textContent=e.message;}
@@ -120,8 +123,9 @@ function giga(v){
  };
  tools.append(extract,file);box.append(input,tools,result);v.append(box);
  const siteAvailable=!!gigaSite&&!!listingSites?.sites?.some(item=>item.code===gigaSite);
- renderGigaStore(v,{site:gigaSite,available:siteAvailable&&!offline,onImported:({store,codes,storeSaved})=>{
-  extraction={store,storeSaved,items:codes.map(code=>({code,reason:'大健店铺核验',occurrences:1})),duplicates:0};
+ const storeSite=gigaSite;
+ renderGigaStore(v,{site:storeSite,available:siteAvailable&&!offline,onImported:({store,codes,storeSaved})=>{
+  extraction=recordImport({store,storeSaved,items:codes.map(code=>({code,reason:'大健店铺核验',occurrences:1})),duplicates:0},'store',storeSite);
   selected=new Set(codes);
   readImportedStore=codes.length>0;
   render();
@@ -133,6 +137,7 @@ function giga(v){
      (extraction.storeSaved?'已核对店铺收藏。':'店铺收藏结果待核对。')
    : '识别到 '+extraction.items.length+' 个不同编码，重复 '+(extraction.duplicates||0)+' 次。请核对并勾选；结果按文档中首次出现的顺序排列。';
   const c=card('识别结果',detail), count=el('p','已选择 '+selected.size+' 个');
+  if(extraction.backup){const backup=el('div');backup.setAttribute('aria-live','polite');c.append(backup);extraction.backup.render(backup);}
   let list=c;
   if(store){
    list=el('details');

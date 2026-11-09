@@ -56,6 +56,11 @@ async function checkFavorites(task, active, update) {
   throw Error(active() ? 'GIGA_BROWSER_RECEIPT_UNKNOWN' : 'GIGA_BROWSER_VIEW_CLOSED_CHECK_RECEIPT');
 }
 
+export async function reconcileGigaFavorites(id, active, update) {
+  const task = await window.edup.maintenance('giga-browser-reconcile', id ? {id} : undefined);
+  return checkFavorites(task, active, update);
+}
+
 export async function ensureGigaFavorites(target, input, admit) {
   const scope = {site: input.site, codes: Object.freeze([...input.codes])};
   if (!window.edup?.maintenance) return Promise.reject(Error('GIGA_BROWSER_DESKTOP_REQUIRED'));
@@ -106,8 +111,7 @@ export async function ensureGigaFavorites(target, input, admit) {
       reconcile.disabled=true;
       next.disabled=true;
       try{
-        const task=await window.edup.maintenance('giga-browser-reconcile');
-        const receipt=await checkFavorites(task,active,text=>{status.textContent=text;});
+        const receipt=await reconcileGigaFavorites(undefined,active,text=>{status.textContent=text;});
         status.textContent=receipt.excluded.length?'部分收藏仍待核对；这些商品不会重复发送。':'上次收藏已核对。请继续原批次。';
         reconcile.hidden=true;
       }catch(error){
