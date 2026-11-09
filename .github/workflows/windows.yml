@@ -24,6 +24,14 @@ jobs:
       - run: npm test
       - run: node --test test/sku-lists.test.cjs
       - run: node --test test/listing-states.test.cjs
+      - run: node --test test/listing-answers.test.cjs
+      - run: node --test test/listing-runner.test.cjs
+      - run: node --test test/listing-runner-recovery.test.cjs
+        env:
+          EDUP_RETRY_PROBE: accepted
+      - run: node --test test/listing-runner-recovery.test.cjs
+        env:
+          EDUP_RETRY_PROBE: not_found
       - run: node test/publication-status.test.cjs
       - run: node test/continuation.test.cjs
       - run: ./scripts/seed-builder-cache.ps1

@@ -11,9 +11,12 @@ export function skuListError(error) {
   return String(error?.message || error).match(/\b(?:SKU_LIST_[A-Z_]+|LISTING_SITE_NOT_READY|AI_REQUEST_INVALID|OUTCOME_UNKNOWN)\b/g)?.join(' · ') || 'REQUEST_FAILED';
 }
 
-export function backupSkuList(call, {site, source, codes, store}) {
-  const args = {id: crypto.randomUUID(), site, source, codes: [...new Set(codes)]};
+// `id` lets the caller keep the backup id with its own list so a later retry is the same save;
+// `onState` hears 'saved' / 'failed' so the caller can remember the outcome across restarts.
+export function backupSkuList(call, {id = crypto.randomUUID(), site, source, codes, store, label, onState}) {
+  const args = {id, site, source, codes: [...new Set(codes)]};
   if (store) args.store = {id: store.id, name: store.name, url: store.url};
+  if (label) args.label = String(label).slice(0, 120);
   const record = {state: 'saving', error: ''};
   const listeners = new Set();
   let active;
@@ -28,6 +31,7 @@ export function backupSkuList(call, {site, source, codes, store}) {
       record.error = skuListError(error);
     }).finally(() => {
       active = null;
+      try { onState?.(record.state, record.error); } catch { /* the caller's bookkeeping must not break the save */ }
       for (const render of listeners) render();
     });
     return active;

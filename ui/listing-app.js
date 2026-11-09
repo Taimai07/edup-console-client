@@ -20,6 +20,13 @@ const matches = (c, f) => f === 'all' ? true : f === 'selling' ? c.stage === 'se
 export function mountListing(root, {call, getSnapshot, isOffline}) {
   const store = createStore({call, getSnapshot, isOffline});
   const backups = new Map();
+  // Backs a local list up to the server and remembers the outcome on the list itself.
+  function startBackup(list, sourceStore) {
+    const backupId = list.backupId || crypto.randomUUID();
+    if (!list.backupId) local.setBackup(list.id, {backupId});
+    backups.set(list.id, backupSkuList(call, {id: backupId, site: list.site, source: list.source, codes: list.codes, store: sourceStore, label: list.label,
+      onState: (state, error) => local.setBackup(list.id, state === 'saved' ? {backup: 'saved', backupError: ''} : {backup: 'failed', backupError: error || ''})}));
+  }
   let route = {page: 'home'}, visible = false, helpOpen = false, drawer = null, renderedPage = '', timer = null, ticks = 0;
   const selected = new Set(), rows = new Map();
   let serverLists, serverListsScope;
@@ -167,19 +174,26 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
       return;
     }
     if (s.phase === 'idle') return;
-    const tone = s.phase === 'error' ? (s.unknown ? 'unknown' : 'error') : s.phase === 'need' ? 'warn' : s.phase === 'done' ? 'success' : 'info';
+    const leftovers = s.phase === 'done' ? (s.failedCodes || []) : [];
+    const tone = s.phase === 'error' ? (s.unknown ? 'unknown' : 'error') : s.phase === 'need' || leftovers.length ? 'warn' : s.phase === 'done' ? 'success' : 'info';
     const head = s.phase === 'running' || s.phase === 'queued' ? (s.label || '处理中') + (s.segments > 1 ? ' · 第 ' + (s.segment || 1) + '/' + s.segments + ' 段' : '')
-      : s.phase === 'need' ? '需要你处理' : s.phase === 'done' ? '完成' : s.phase === 'paused' ? '已暂停' : s.unknown ? '结果待确认' : '没完成';
+      : s.phase === 'need' ? '等大健页面连好' : s.phase === 'done' ? (leftovers.length ? '完成，有 ' + leftovers.length + ' 款没做成' : '完成')
+      : s.phase === 'paused' ? '已暂停' : s.unknown ? '结果待确认' : '没完成';
     const box = h('div', {class: 'lst-banner lst-banner--' + tone, role: s.phase === 'error' ? 'alert' : 'status'},
       ['running', 'queued'].includes(s.phase) ? h('span', {class: 'lst-spinner', 'aria-hidden': 'true'}) : null,
       h('strong', {}, head), h('span', {}, s.message || ''),
-      s.total ? h('span', {class: 'muted'}, '已处理 ' + (s.done || 0) + '/' + s.total + ' 款' + (s.excluded ? '（退货率不合格排除 ' + s.excluded + ' 款）' : '')) : null,
+      s.total ? h('span', {class: 'muted'}, '已处理 ' + (s.done || 0) + '/' + s.total + ' 款' + (s.excluded ? '（退货率不合格排除 ' + s.excluded + ' 款）' : '')
+        + (s.phase === 'running' && s.failed ? '；' + s.failed + ' 款自动重试后仍没做成，最后可一键重试' : '')) : null,
       s.queue ? h('span', {class: 'muted'}, '后面还有 ' + s.queue + ' 项排队') : null);
     const actions = h('div', {class: 'lst-actions'});
     if (s.phase === 'running' && s.segments > 1 && !s.stopping) actions.append(btn('这一段完成后暂停', () => runner.stop()));
     if (s.phase === 'need') actions.append(btn('已连好，继续', () => runner.continue(), {primary: true}), btn('打开连接说明', () => { helpOpen = true; render(); }),
       btn('取消', () => runner.cancel()));
     if (s.phase === 'paused' && s.left?.length) actions.append(btn('继续剩下的', () => runner.start({...s.task}), {primary: true}));
+    if (leftovers.length) actions.append(btn('重试没做成的 ' + leftovers.length + ' 款', () => {
+      const t = s.task; runner.dismiss(); runner.forgetInterrupted();
+      runner.start({...t, codes: leftovers, fresh: true, label: (s.label || '上架') + ' · 重试'});
+    }, {primary: true}));
     if (s.phase === 'error' && s.need === 'rescreen') actions.append(btn('重新筛选这一批', () => { const t = s.task; runner.dismiss(); runner.start({...t, fresh: true}); }, {primary: true}));
     if (s.reconcileId) actions.append(btn('核对上次收藏结果', async () => {
       const r = await runner.reconcile(s.reconcileId);
@@ -272,6 +286,12 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     const backup = !recent && backups.get(list.id);
     const backupBox = h('div', {class: 'lst-backup'});
     if (backup) backup.render(backupBox);
+    else if (!recent && list.source === 'local') {
+      const own = local.lists().find(x => x.id === list.id);
+      if (own && own.backup !== 'saved') backupBox.append(feedback('warn', '这份清单还没备份到服务器',
+        '现在只存在这台电脑上：换电脑、重装或本机数据丢失就找不回来，服务器也看不到它的进度。' + (own.backupError ? '上次失败原因：' + own.backupError + '。' : ''), ''),
+        h('div', {class: 'lst-actions'}, btn('备份到服务器', () => { startBackup(own); render(true); }, {primary: true})));
+    }
     const chips = h('div', {class: 'lst-chips'}, FILTERS.map(([k, name]) => h('button', {type: 'button', class: filter === k ? 'is-on' : '',
       dataset: {filter: k}, onclick: () => { route = {...route, filter: k}; selected.clear(); render(true); }}, name + ' ' + all.filter(c => matches(c, k)).length)),
       (() => { const input = h('input', {type: 'search', placeholder: '搜索编码或名称', 'aria-label': '搜索商品', value: route.q || ''});
@@ -473,9 +493,10 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
       h('div', {class: 'lst-actions'}, h('button', {type: 'button', onclick: () => { wizard.step = 2; render(true); }}, '上一步'),
         btn('开始处理 ' + codes.length + ' 款', () => {
           const id = crypto.randomUUID(), ex = wizard.extraction;
-          const list = {id, label: wizard.label || '清单', site: store.site, created: Math.floor(Date.now() / 1000), codes, jobs: [], source: ex.source};
+          const list = {id, label: wizard.label || '清单', site: store.site, created: Math.floor(Date.now() / 1000), codes, jobs: [], source: ex.source,
+            backupId: crypto.randomUUID(), backup: 'saving'};
           local.saveList(list);
-          backups.set(id, backupSkuList(call, {site: store.site, source: ex.source, codes, store: ex.store}));
+          startBackup(list, ex.store);
           runner.start({kind: wizard.mode === 'query' ? 'query' : 'prepare', site: store.site, codes, listId: id, label: list.label});
           Object.assign(wizard, {step: 1, text: '', extraction: null, label: '', mode: 'prepare'});
           go({page: 'list', id});

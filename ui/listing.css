@@ -156,3 +156,5 @@ button.lst-pill{cursor:pointer}
 .lst-page{overflow-x:auto}
 .lst-table td{overflow-wrap:anywhere}
 .lst-table td strong{white-space:nowrap;overflow-wrap:normal}
+.lst-feedback--warn{background:#fff5e0;border-color:#f1d49b}
+.lst-question-earlier:empty,.lst-question-saved:empty,.lst-question-status:empty{display:none}
