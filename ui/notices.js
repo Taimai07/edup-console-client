@@ -3,6 +3,8 @@ Object.assign(known,{GIGA_QUERY_RATE_LIMIT:['云仓处理达到服务频率限�
 const pricingChanged=['定价规则已变','请在原批次按新价续检，核对新售价后再确认。'];
 known.PRICING_RULE_CHANGED_REPREPARE=pricingChanged;
 Object.assign(known,{
+  NO_READY_PRODUCTS:['目前没有可进入确认单的商品','请在清单里查看逐款状态。已有提交或失败回执的商品要先核对原记录，再按提示处理。'],
+  UNCHANGED_PLAN_ALREADY_ATTEMPTED:['这份方案已有提交尝试','请先核对原回执，或按清单提示续检。暂时无需重复提交。'],
   PREVIEW_EXPIRED_OR_CHANGED:['提交清单已过期或改变','本次未进入提交。请核对重新整理后的售价和库存，再确认。'],
   OPERATION_RATE_LIMIT:['提交频率达到限制','本次未入队。稍后刷新清单并重新核对。'],
   SKU_ALREADY_SUBMITTED_OR_PENDING:['有商品已有提交任务','请刷新原批次，核对已有任务后再确认其他商品。'],
