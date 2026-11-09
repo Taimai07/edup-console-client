@@ -8,7 +8,8 @@ import {friendlyError} from './notices.js';
 import {isExcludedRate} from './listing-states.js';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-const KEY = {screens: 'edup:listing:screens:v1', skips: 'edup:listing:skips:v1', lists: 'edup:listing:lists:v1', run: 'edup:listing:run:v1'};
+const KEY = {screens: 'edup:listing:screens:v1', skips: 'edup:listing:skips:v1', lists: 'edup:listing:lists:v1', run: 'edup:listing:run:v1',
+  pace: 'edup:listing:pace:v1', usage: 'edup:listing:giga-usage:v1'};
 const read = (key, fallback) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
 const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* per-viewer convenience only */ } };
 const REGION = {US: 'USA', DE: 'DEU', GB: 'GBR', CA: 'CAN', JP: 'JPN'};
@@ -86,6 +87,88 @@ const codeOf = error => (String(error?.message || error || '').match(/\b[A-Z][A-
 const unknownOutcome = error => error?.outcome === 'unknown' || String(error?.message || '').includes('OUTCOME_UNKNOWN');
 const stopped = () => Object.assign(Error('LISTING_RUN_STOPPED'), {stopped: true});
 
+// 11-09 evening: after a 2000+ list GIGA started asking for a slider puzzle and answering the
+// extension with empty pages. The program never solves or avoids the puzzle. It keeps the 大健
+// account well under that level, and if GIGA asks anyway it pauses until the operator has
+// solved it on the page. Defaults per computer and site; `edup:listing:pace:v1` in localStorage
+// can override any of them without a release.
+export const PACE_DEFAULTS = Object.freeze({
+  restMinutes: 5,       // between two browser segments
+  hourly: 90,           // SKUs read on the 大健 page per rolling hour
+  daily: 450,           // SKUs read per calendar day
+  resumeHour: 9,        // when the daily allowance is used up, carry on the next day from 9:00
+});
+export function pace() {
+  const saved = read(KEY.pace, {});
+  const out = {...PACE_DEFAULTS};
+  for (const key of Object.keys(out)) if (Number.isFinite(saved?.[key]) && saved[key] >= 0) out[key] = saved[key];
+  return out;
+}
+const VERIFY = ['GIGA_VERIFICATION_REQUIRED', 'GIGA_RESPONSE_INVALID'];
+const dayOf = ms => { const d = new Date(ms); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+export const usage = {
+  rows: () => read(KEY.usage, []).filter(row => row && Number.isFinite(row.at) && Number.isFinite(row.n)),
+  record(site, n, now = Date.now()) {
+    const rows = usage.rows().filter(row => now - row.at < 36 * 3600e3);
+    rows.push({site, n, at: now});
+    write(KEY.usage, rows);
+  },
+  // How long to wait before `n` more SKUs may be read for `site`, and why. 0 = go now.
+  wait(site, n, now = Date.now(), p = pace()) {
+    const rows = usage.rows().filter(row => row.site === site);
+    const today = dayOf(now);
+    const day = rows.filter(row => dayOf(row.at) === today).reduce((sum, row) => sum + row.n, 0);
+    if (p.daily && day > 0 && day + n > p.daily) {
+      const next = new Date(now); next.setDate(next.getDate() + 1); next.setHours(p.resumeHour, 0, 0, 0);
+      return {ms: next.getTime() - now, why: 'daily', day};
+    }
+    const hour = rows.filter(row => now - row.at < 3600e3).sort((a, b) => a.at - b.at);
+    let used = hour.reduce((sum, row) => sum + row.n, 0), until = now;
+    for (const row of hour) {
+      if (!p.hourly || used === 0 || used + n <= p.hourly) break;
+      used -= row.n; until = row.at + 3600e3;
+    }
+    const last = rows.reduce((max, row) => Math.max(max, row.at), 0);
+    const rest = last ? last + p.restMinutes * 60e3 : 0;
+    const at = Math.max(until, rest);
+    return at > now ? {ms: at - now, why: until >= rest ? 'hourly' : 'rest', day} : {ms: 0, day};
+  },
+};
+const minutes = ms => Math.max(1, Math.ceil(ms / 60e3));
+const clock = ms => { const d = new Date(Date.now() + ms); return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+
+// Keeps the 大健 page reads within the allowance. Waiting can be paused like any other wait.
+async function throttle(site, n, update) {
+  for (;;) {
+    if (stopRequested) throw stopped();
+    const p = pace(), w = usage.wait(site, n, Date.now(), p);
+    if (!w.ms) return;
+    const text = w.why === 'daily' ? '今天已读 ' + w.day + ' 款，达到每天 ' + p.daily + ' 款的上限，' + clock(w.ms) + ' 自动继续（软件要开着）'
+      : w.why === 'hourly' ? '这一小时已读满 ' + p.hourly + ' 款，' + minutes(w.ms) + ' 分钟后自动继续'
+      : '按节奏休息，' + minutes(w.ms) + ' 分钟后读下一段（今天已读 ' + w.day + ' 款）';
+    update(text);
+    await pause(Math.min(w.ms, 60e3));
+  }
+}
+
+function desktopNotice(title, body) {
+  try { if (typeof Notification === 'function') new Notification(title, {body}); } catch { /* best effort */ }
+}
+
+// GIGA wants a human on the page (slider puzzle). No automatic retries here: requests from a
+// session under verification only make it worse. 继续 tries again, 取消 ends the run.
+async function waitForVerification(code, count) {
+  note({code, step: 'verification'});
+  const text = '大健要求人工验证，' + count + ' 款暂停。请在大健页面随便搜一个商品，按提示完成拼图验证，然后点「已完成验证，继续」。';
+  desktopNotice('EDUPLINK：大健要求人工验证', '请到大健页面完成拼图验证，再回软件点继续。');
+  emit({phase: 'need', need: 'verify', message: text});
+  const go = await new Promise(resolve => { resumeSignal = resolve; });
+  resumeSignal = null;
+  if (go === false) throw Object.assign(Error('LISTING_RUN_CANCELLED'), {cancelled: true});
+  if (stopRequested) throw stopped();
+  emit({phase: 'running', need: null, message: '已确认验证完成，继续'});
+}
+
 // Best effort: why a run waited or set a segment aside reaches the diagnostics upload, so the
 // server can see where a list stopped. Older desktops without the action simply ignore it.
 function note(event) {
@@ -147,8 +230,10 @@ async function screenSegment(codes, site, update) {
   for (;;) {
     if (stopRequested) throw stopped();
     try {
+      await throttle(site, codes.length, update);
       update('正在大健页面逐款读取退货率（' + codes.length + ' 款）');
       const started = await maintenance('giga-browser-start', {site, codes});
+      usage.record(site, codes.length);
       const receipt = await checkFavorites(started, update);
       if (receipt.codes.length && (receipt.site !== site || receipt.codes.some(sku => !codes.includes(sku))))
         throw Error('GIGA_BROWSER_RECEIPT_SCOPE_MISMATCH');
@@ -157,6 +242,7 @@ async function screenSegment(codes, site, update) {
       if (error.cancelled || error.stopped) throw error;
       const code = codeOf(error);
       if (CONNECTION.includes(code)) { await waitForBrowser(site, codes.length); continue; }
+      if (VERIFY.includes(code)) { await waitForVerification(code, codes.length); continue; }
       if (code === 'GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION') {
         try {
           update('上次的大健收藏没收尾，正在自动核对');

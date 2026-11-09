@@ -1,7 +1,7 @@
 name: Windows client
 on:
   push:
-    branches: [main]
+    branches: [main, review/giga-082]
   workflow_dispatch:
 permissions:
   contents: write
@@ -26,6 +26,8 @@ jobs:
       - run: node --test test/listing-states.test.cjs
       - run: node --test test/listing-answers.test.cjs
       - run: node --test test/listing-runner.test.cjs
+      - run: node --test test/listing-pace.test.cjs
+      - run: node --test test/giga-known-products.test.cjs
       - run: node --test test/listing-runner-recovery.test.cjs
         env:
           EDUP_RETRY_PROBE: accepted
@@ -64,6 +66,7 @@ jobs:
             dist/native-continuation-receipt.json
             dist/native-giga-browser-receipt.json
       - name: Publish new version without replacing existing releases
+        if: github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}

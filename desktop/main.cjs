@@ -101,7 +101,7 @@ app.whenReady().then(async()=>{
   }
   if(action==='giga-browser-reuse')return gigaBrowser.reusableFavorites(arg);
   // The listing runner reports why it waited or set a segment aside; errors.jsonl is what the diagnostics upload sends.
-  if(action==='listing-event'){const code=typeof arg?.code==='string'&&/^[A-Z][A-Z0-9_]{2,79}$/.test(arg.code)?arg.code:'LISTING_EVENT_INVALID';logger.write('listing_runner_problem',{level:'error',code,state:['browser','segment','preparation'].includes(arg?.step)?arg.step:'unknown',...(Number.isInteger(arg?.segment)&&arg.segment>0&&arg.segment<100000?{count:arg.segment}:{})});return {logged:true};}
+  if(action==='listing-event'){const code=typeof arg?.code==='string'&&/^[A-Z][A-Z0-9_]{2,79}$/.test(arg.code)?arg.code:'LISTING_EVENT_INVALID';logger.write('listing_runner_problem',{level:'error',code,state:['browser','segment','preparation','verification'].includes(arg?.step)?arg.step:'unknown',...(Number.isInteger(arg?.segment)&&arg.segment>0&&arg.segment<100000?{count:arg.segment}:{})});return {logged:true};}
   if(action==='giga-browser-screen'){
    const evidence=gigaBrowser.task(arg?.id);
    if(evidence.state!=='rates_read')throw Error('GIGA_RETURN_SCREEN_REQUIRED');

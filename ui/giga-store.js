@@ -17,8 +17,12 @@ const messages = {
   STORE_CATALOG_PAGE_UNVERIFIED: '这一页的商品清单未能完整核对，请稍后重新读取。',
   STORE_PRODUCT_SCOPE_MISMATCH: '发现无法确认属于这家店铺的商品，导入已暂停。',
   STORE_FAVORITE_RECONCILIATION_REQUIRED: '店铺收藏结果待核对，请先到大健确认收藏状态。',
-  STORE_RECEIPT_TIMEOUT: '等不到浏览器回执，请先核对连接和本次操作状态。'
+  STORE_RECEIPT_TIMEOUT: '等不到浏览器回执，请先核对连接和本次操作状态。',
+  GIGA_VERIFICATION_REQUIRED: '大健要求人工验证。请在大健页面随便搜一个商品、完成拼图验证，再重新点导入；已读过的页会保留。',
+  GIGA_RESPONSE_INVALID: '大健返回了异常页面，可能需要人工验证。请到大健页面看一下，处理后再重新点导入。'
 };
+// 0.8.2: store pages are read with a pause between them (was 350 ms), see listing-runner PACE.
+const STORE_PAGE_GAP_MS = 5000;
 
 export async function collectStore(resolved, getPage, progress, active) {
   const skus = new Set(), productIds = new Set();
@@ -42,7 +46,7 @@ export async function collectStore(resolved, getPage, progress, active) {
       productIds.add(item.productId);
     }
     progress(skus.size, resolved.total);
-    if (page < pages) await wait(350);
+    if (page < pages) await wait(STORE_PAGE_GAP_MS);
   }
   if (skus.size !== resolved.total) throw Error('STORE_CATALOG_CHANGED');
   return [...skus];

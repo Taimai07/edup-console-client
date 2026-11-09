@@ -6,6 +6,8 @@ const storeId = /^[1-9][0-9]{0,14}$/;
 const storeCode = /^[A-Z0-9][A-Z0-9_.-]{0,39}$/;
 const productCode = /^[A-Z0-9][A-Z0-9_.-]{2,39}$/;
 const controls = /[\x00-\x1f\x7f]/;
+const KNOWN_LIMIT = 3000;
+const RATE_READ = ['RATE_LOW', 'RATE_NA', 'RATE_MEDIUM', 'RATE_HIGH'];
 class GigaBrowser {
   constructor({directory, now = () => Date.now() / 1000} = {}) { this.directory = directory; this.now = now; }
   root() {
@@ -42,7 +44,7 @@ class GigaBrowser {
       const age = this.now() - (heartbeat?.at || 0), inspection = connection?.inspection;
       return {connected: age >= -5 && age < 10 && !!inspection, inspection: inspection || null,
         extensionProtocol: connection?.extensionProtocol || 0, storeCatalog: connection?.storeCatalog === true,
-        accountScopeV2: connection?.accountScopeV2 === true,
+        accountScopeV2: connection?.accountScopeV2 === true, knownProducts: connection?.knownProducts === true,
         connectedAt: connection?.connectedAt};
     } catch { return {connected: false, code: 'GIGA_BROWSER_SETUP_REQUIRED'}; }
   }
@@ -150,9 +152,44 @@ class GigaBrowser {
         throw Error('GIGA_BUYER_SCOPE_REQUIRED');
       buyerScope={buyerSalt:saved.salt,...(phase==='favorites'?{expectedBuyerHash}:{})};
     }
+    // 0.8.2: product IDs seen in earlier verified receipts let extension 0.4.4 open the product
+    // page directly instead of searching; the page still has to show the exact SKU.
+    const known = phase === 'read_rates' && connection.knownProducts ? this.knownFor(frozen.site, frozen.codes) : null;
     const task = this.issueTask({op: phase, site: frozen.site, skus: frozen.codes,
-      ...buyerScope,...(phase === 'favorites' ? {approved} : {})}, screenId ? {screenId} : {});
+      ...buyerScope,...(phase === 'favorites' ? {approved} : {}), ...(known ? {known} : {})}, screenId ? {screenId} : {});
     return {id: task.id, state: 'waiting_for_browser', site: frozen.site, codes: frozen.codes};
+  }
+  // SKU -> GIGA product ID, one small file per site, newest last, at most KNOWN_LIMIT entries.
+  knownFile(site) { return 'known-products-' + site + '.json'; }
+  knownMap(site) {
+    try {
+      const saved = this.read(this.knownFile(site));
+      if (saved?.version === 1 && saved.site === site && saved.ids && typeof saved.ids === 'object' && !Array.isArray(saved.ids)) return saved.ids;
+    } catch { /* a damaged file only costs searches */ }
+    return {};
+  }
+  knownFor(site, codes) {
+    const ids = this.knownMap(site), out = {}, used = new Set();
+    for (const sku of codes) {
+      const id = Object.hasOwn(ids, sku) ? ids[sku] : null;
+      if (typeof id === 'string' && storeId.test(id) && !used.has(id)) { out[sku] = id; used.add(id); }
+    }
+    return Object.keys(out).length ? out : null;
+  }
+  remember(site, rows) {
+    if (!REGIONS[site] || !rows.length) return;
+    const ids = this.knownMap(site);
+    let changed = false;
+    for (const {sku, productId} of rows) {
+      if (typeof sku !== 'string' || !productCode.test(sku) || typeof productId !== 'string' || !storeId.test(productId)) continue;
+      // An ID now verified for this SKU replaces any other SKU that claimed it.
+      for (const [other, id] of Object.entries(ids)) if (id === productId && other !== sku) { delete ids[other]; changed = true; }
+      if (ids[sku] !== productId) { delete ids[sku]; ids[sku] = productId; changed = true; }
+    }
+    if (!changed) return;
+    const keys = Object.keys(ids);
+    for (const sku of keys.slice(0, Math.max(0, keys.length - KNOWN_LIMIT))) delete ids[sku];
+    try { this.write(this.knownFile(site), {version: 1, site, ids}); } catch { /* best effort */ }
   }
   requireConnection(site, store = false) {
     if (!Object.hasOwn(REGIONS, site)) throw Error('GIGA_REGION_MAPPING_NOT_VERIFIED');
@@ -273,6 +310,7 @@ class GigaBrowser {
           typeof row.productId !== 'string' || !storeId.test(row.productId)) ||
         new Set(rows.map(row => row.sku)).size !== rows.length || new Set(rows.map(row => row.productId)).size !== rows.length)
       throw Error('STORE_RECEIPT_SCOPE_MISMATCH');
+    this.remember(task.site, rows);
     return {...base, total: task.total, page: task.page, items: rows};
   }
   task(id) {
@@ -307,6 +345,8 @@ class GigaBrowser {
       new Set(rows.flatMap(row=>row.productId?[row.productId]:[])).size !== rows.filter(row=>row.productId).length)
       throw Error('GIGA_BROWSER_RECEIPT_SCOPE_MISMATCH');
     const verified=rows.filter(row=>row.state!=='FAVORITE_UNVERIFIED');
+    // Only rows whose product page showed the exact SKU and a rate label.
+    if (read) this.remember(task.site, rows.filter(row => RATE_READ.includes(row.state)));
     return {id, state: read ? 'rates_read' : 'verified', site: task.site, countryId, countryCode, codes: verified.map(row=>row.sku), items: verified,
       ...(result.buyerHash?{buyerHash:result.buyerHash}:{}),
       ...(read ? {} : {screenId: task.screenId,excluded:rows.filter(row=>row.state==='FAVORITE_UNVERIFIED')})};
