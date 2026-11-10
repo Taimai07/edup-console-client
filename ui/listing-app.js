@@ -9,6 +9,7 @@ import {renderGigaStore} from './giga-store.js';
 import {backupSkuList, skuListPanel, renderModelUsage} from './giga-lists.js';
 import {extractCodes} from './sku-rules.js';
 import {notify, friendlyError} from './notices.js';
+import {archiveGroups, groupTask, restoredArchive} from './listing-groups.js';
 
 const PAGES = [['home', '首页'], ['new', '新建上架'], ['lists', '清单'], ['opening', '开卖核对']];
 const FILTERS = [['all', '全部'], ['you', '等你'], ['program', '程序'], ['platform', '亚马逊'], ['maintainer', '维护者'], ['selling', '在售'], ['off', '已排除']];
@@ -24,11 +25,12 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
   function startBackup(list, sourceStore) {
     const backupId = list.backupId || crypto.randomUUID();
     if (!list.backupId) local.setBackup(list.id, {backupId});
-    backups.set(list.id, backupSkuList(call, {id: backupId, site: list.site, source: list.source, codes: list.codes, store: sourceStore, label: list.label,
+    backups.set(list.id, backupSkuList(call, {id: backupId, site: list.site, source: list.source, codes: list.codes, store: sourceStore || list.store, label: list.label,
       onState: (state, error) => local.setBackup(list.id, state === 'saved' ? {backup: 'saved', backupError: ''} : {backup: 'failed', backupError: error || ''})}));
   }
   let route = {page: 'home'}, visible = false, helpOpen = false, drawer = null, renderedPage = '', timer = null, ticks = 0;
   const selected = new Set(), rows = new Map();
+  const selectedGroups = new Set();
   let serverLists, serverListsScope;
   const usageCard = h('details', {class: 'lst-card'}, h('summary', {}, '模型用量'));
   const usageBody = h('div');
@@ -166,11 +168,11 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
   function renderRunner() {
     const s = runner.state, interrupted = runner.interrupted();
     runnerBox.replaceChildren();
-    if (s.phase === 'idle' && interrupted) {
-      runnerBox.append(h('div', {class: 'lst-banner lst-banner--info'}, h('strong', {}, '上次有一份没做完：' + (interrupted.label || '上架') + '（' + interrupted.codes.length + ' 款）'),
+    if (s.phase === 'idle' && (interrupted || runner.savedQueue().length)) {
+      runnerBox.append(h('div', {class: 'lst-banner lst-banner--info'}, h('strong', {}, interrupted ? '上次有一份没做完：' + (interrupted.label || '上架') + '（' + interrupted.codes.length + ' 款）' : '还有保存的待执行分组'),
         h('span', {class: 'muted'}, '已经交给服务器的段会保留，继续时只做剩下的。'),
-        h('div', {class: 'lst-actions'}, btn('继续', () => { runner.forgetInterrupted(); runner.start(interrupted); }, {primary: true}),
-          btn('放弃', () => { runner.forgetInterrupted(); render(); }))));
+        h('div', {class: 'lst-actions'}, btn('继续', () => runner.resumeSaved(), {primary: true}),
+          btn('清空待执行队列（保留存档）', () => { runner.discardPending(); render(); }))));
       return;
     }
     if (s.phase === 'idle') return;
@@ -191,7 +193,8 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
       btn('取消', () => runner.cancel()));
     else if (s.phase === 'need') actions.append(btn('已连好，继续', () => runner.continue(), {primary: true}), btn('打开连接说明', () => { helpOpen = true; render(); }),
       btn('取消', () => runner.cancel()));
-    if (s.phase === 'paused' && s.left?.length) actions.append(btn('继续剩下的', () => runner.start({...s.task}), {primary: true}));
+    if (s.phase === 'paused' && (s.left?.length || runner.savedQueue().length)) actions.append(btn('继续剩下的', () => runner.resumeSaved(), {primary: true}));
+    if (['paused','error'].includes(s.phase) && runner.savedQueue().length) actions.append(btn('清空待执行队列（保留存档）', () => { runner.discardPending(); render(); }));
     if (leftovers.length) actions.append(btn('重试没做成的 ' + leftovers.length + ' 款', () => {
       const t = s.task; runner.dismiss(); runner.forgetInterrupted();
       runner.start({...t, codes: leftovers, fresh: true, label: (s.label || '上架') + ' · 重试'});
@@ -265,7 +268,13 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     if (scope !== serverListsScope) {
       serverListsScope = scope;
       serverLists = skuListPanel({call, site: store.site, offline: offline(),
-        onResume: codes => runner.start({kind: 'prepare', site: store.site, codes, label: '继续服务器备份清单'})});
+        onResume: codes => runner.start({kind: 'prepare', site: store.site, codes, label: '继续服务器备份清单'}),
+        onRestore: result => {
+          const existing = local.lists().find(l => l.backupId === result.id);
+          const restored = existing || restoredArchive(result);
+          if (!existing) local.saveList(restored);
+          local.ensureGroups(restored.id); go({page: 'list', id: restored.id});
+        }});
       serverLists.querySelector('summary').textContent = '服务器备份清单';
     }
     renderModelUsage(usageBody, store.service?.modelUsage);
@@ -278,7 +287,11 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     const recent = route.id === 'recent';
     const list = recent ? null : store.list(route.id);
     if (!recent && !list) return [feedback('info', '找不到这份清单', '可能已经切换了站点。'), btn('回到清单', () => go({page: 'lists'}))];
-    const all = sortCards(recent ? store.homeCards() : store.cardsFor(list));
+    const ownArchive = !recent && list.source === 'local' ? local.ensureGroups(list.id) : null;
+    const groups = ownArchive ? archiveGroups(ownArchive) : [];
+    const focused = groups.find(g => g.id === route.groupId);
+    const scope = focused ? new Set(focused.codes) : null;
+    const all = sortCards(recent ? store.homeCards() : store.cardsFor(list)).filter(c => !scope || scope.has(c.sku));
     const filter = route.filter || 'all', q = (route.q || '').trim().toUpperCase();
     const shown = all.filter(c => matches(c, filter) && (!q || c.sku.includes(q) || (c.name || '').toUpperCase().includes(q)));
     const s = summarize(all);
@@ -304,7 +317,45 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     fillRows(tbody, shown);
     const bulk = h('div', {class: 'lst-bulk'});
     renderBulk(bulk, all);
-    return [header, backupBox, strip(s.stages), chips, shown.length ? table : h('p', {class: 'muted lst-empty-row'}, '这一类没有商品。'), bulk];
+    const archives = ownArchive ? h('section', {class: 'lst-card'}, h('h3', {}, '商品分组存档 · 每组最多 100 款'),
+      h('p', {class: 'muted'}, '分组会保存。勾选一组或多组再执行，关闭软件后可继续；不会自动提交到亚马逊。'),
+      h('p', {}, '本清单执行方式：' + (ownArchive.kind === 'query' ? '只查报价和库存' : '筛选并准备上架资料（包含模型检查）')),
+      h('div', {class: 'lst-actions'},
+        btn('全选组', () => { for (const g of groups) selectedGroups.add(g.id); render(true); }),
+        btn('清空选择', () => { for (const g of groups) selectedGroups.delete(g.id); render(true); }),
+        btn('执行选中的 ' + groups.filter(g => selectedGroups.has(g.id)).length + ' 组', async () => {
+          const picked = groups.filter(g => selectedGroups.has(g.id));
+          const excluded = new Set(store.cardsFor(list).filter(c => ['selling','excluded','skipped'].includes(c.stage)).map(c => c.sku));
+          // Cross-PC restoration has no local request journal. Check server ownership first;
+          // jobs already preparing/prepared/failed need their original per-item continuation.
+          if (ownArchive.backup === 'saved' && ownArchive.backupId) {
+            const saved = await call('sku_list_status', {id: ownArchive.backupId});
+            if (saved.id !== ownArchive.backupId || saved.site !== ownArchive.site ||
+                JSON.stringify(saved.items.map(row => row.sku)) !== JSON.stringify(ownArchive.codes)) throw Error('SKU_LIST_RECEIPT_INVALID');
+            for (const row of saved.items) if (!['not_started','screened'].includes(row.stage)) excluded.add(row.sku);
+          }
+          let count = 0;
+          for (const g of picked) {
+            const task = groupTask(ownArchive, g);
+            const codes = task.codes.filter(sku => !excluded.has(sku));
+            if (codes.length) { runner.start({...task, codes}); count += codes.length; }
+          }
+          notify({level:'info', title: count ? '已安排 ' + count + ' 款' : '所选分组没有待开始的商品',
+            message:'已处理或有原任务的商品保留进度；补资料、重试请打开本组的商品操作。'});
+          selectedGroups.clear(); render(true);
+        }, {primary: true, disabled: offline() || !groups.some(g => selectedGroups.has(g.id))}),
+        btn('查看全部商品', () => go({page: 'list', id: list.id}))),
+      h('table', {class: 'lst-table'}, h('thead', {}, h('tr', {}, ['选择', '分组', '商品数', '进度', ''].map(t => h('th', {}, t)))),
+        h('tbody', {}, groups.map(g => {
+          const wanted = new Set(g.codes), cards = store.cardsFor(list).filter(c => wanted.has(c.sku)), summary = summarize(cards);
+          const check = h('input', {type: 'checkbox', 'aria-label': '选择' + g.label}); check.checked = selectedGroups.has(g.id);
+          check.addEventListener('change', () => { check.checked ? selectedGroups.add(g.id) : selectedGroups.delete(g.id); render(true); });
+          return h('tr', {}, h('td', {}, check), h('td', {}, g.label), h('td', {}, String(g.codes.length)),
+            h('td', {class:'lst-archive-progress', dataset:{group:g.id}}, '待开始 ' + summary.stages.queued + ' · 待提交 ' + summary.stages.ready + ' · 在售 ' + summary.selling),
+            h('td', {}, btn('查看本组', () => go({page: 'list', id: list.id, groupId: g.id}))));
+        })))) : null;
+    return [header, backupBox, archives, focused ? h('p', {}, '当前查看：' + focused.label) : null,
+      strip(s.stages), chips, shown.length ? table : h('p', {class: 'muted lst-empty-row'}, '这一类没有商品。'), bulk];
   }
 
   function fillRows(tbody, cards) {
@@ -349,10 +400,20 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     if (route.page !== 'list') return;
     const recent = route.id === 'recent', list = recent ? null : store.list(route.id);
     if (!recent && !list) return;
-    const all = sortCards(recent ? store.homeCards() : store.cardsFor(list));
+    const group = !recent && list.groups?.find(g => g.id === route.groupId), scope = group ? new Set(group.codes) : null;
+    const all = sortCards(recent ? store.homeCards() : store.cardsFor(list)).filter(c => !scope || scope.has(c.sku));
     const filter = route.filter || 'all', q = (route.q || '').trim().toUpperCase();
     const shown = all.filter(c => matches(c, filter) && (!q || c.sku.includes(q) || (c.name || '').toUpperCase().includes(q)));
     const tbody = page.querySelector('.lst-products tbody');
+    if (list?.groups) {
+      const cards = store.cardsFor(list);
+      for (const cell of page.querySelectorAll('.lst-archive-progress')) {
+        const group = list.groups.find(g => g.id === cell.dataset.group);
+        if (!group) continue;
+        const wanted = new Set(group.codes), summary = summarize(cards.filter(c => wanted.has(c.sku)));
+        cell.textContent = '待开始 ' + summary.stages.queued + ' · 待提交 ' + summary.stages.ready + ' · 在售 ' + summary.selling;
+      }
+    }
     if (tbody) fillRows(tbody, shown);
     page.querySelector('.lst-strip')?.replaceWith(strip(summarize(all).stages));
     for (const b of page.querySelectorAll('.lst-chips button[data-filter]')) {
@@ -473,13 +534,13 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
       ['大健页面：' + b.label, b.ok],
     ];
     const size = store.browser?.accountScopeV2 ? 30 : 20, segments = Math.ceil(n / size);
-    const ok = checks.every(x => x[1]);
+    const ok = siteOk; // Archiving itself does not need a live browser connection.
     return [h('ul', {class: 'lst-checks'}, checks.map(([t, good]) => h('li', {class: good ? 'ok' : 'bad'}, (good ? '✓ ' : '✗ ') + t))),
       !b.ok ? btn('打开连接说明', () => { helpOpen = true; render(); }) : null,
       h('section', {class: 'lst-summary'}, h('h3', {}, '怎么跑'), h('ul', {}, [
-        '共 ' + n + ' 款，分 ' + segments + ' 段，每段最多 ' + size + ' 款。',
+        '共 ' + n + ' 款，保存成 ' + Math.ceil(n / 100) + ' 个分组，每组最多 100 款。',
         '每段先在大健页面读退货率、收藏通过的商品，再交给服务器' + (wizard.mode === 'query' ? '查报价和库存。' : '准备上架资料并做亚马逊预检。'),
-        segments > 1 ? '上一段在服务器上处理完，才开始下一段。最后一段交给服务器以后，可以关掉软件。' : '交给服务器以后可以关掉软件。',
+        '保存后由你选择要执行的组。组内逐批读取，读取冷却 30 秒，没有客户端小时或每日数量上限。',
         '中途切到别的页面不会中断。关掉软件的话，下次打开会提示从哪里继续。',
         '预计时间：暂无（还没有可靠的历史数据）。',
       ].map(t => h('li', {}, t)))),
@@ -490,16 +551,15 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
 
   function wizardThree() {
     const codes = wizardCodes();
-    return [h('p', {}, '将处理 ' + codes.length + ' 款（' + store.site + ' 站，清单「' + (wizard.label || '未命名') + '」）。'),
+    return [h('p', {}, '将保存 ' + codes.length + ' 款为 ' + Math.ceil(codes.length / 100) + ' 个分组（' + store.site + ' 站，清单「' + (wizard.label || '未命名') + '」）。'),
       h('p', {class: 'muted'}, wizard.mode === 'query' ? '只查报价和库存，不会上架。' : '筛选和准备都不会上架；提交前还会请你在确认单上逐款确认。'),
       h('div', {class: 'lst-actions'}, h('button', {type: 'button', onclick: () => { wizard.step = 2; render(true); }}, '上一步'),
-        btn('开始处理 ' + codes.length + ' 款', () => {
+        btn('保存 ' + Math.ceil(codes.length / 100) + ' 个分组', () => {
           const id = crypto.randomUUID(), ex = wizard.extraction;
           const list = {id, label: wizard.label || '清单', site: store.site, created: Math.floor(Date.now() / 1000), codes, jobs: [], source: ex.source,
-            backupId: crypto.randomUUID(), backup: 'saving'};
+            backupId: crypto.randomUUID(), backup: 'saving', kind: wizard.mode === 'query' ? 'query' : 'prepare', store: ex.store};
           local.saveList(list);
           startBackup(list, ex.store);
-          runner.start({kind: wizard.mode === 'query' ? 'query' : 'prepare', site: store.site, codes, listId: id, label: list.label});
           Object.assign(wizard, {step: 1, text: '', extraction: null, label: '', mode: 'prepare'});
           go({page: 'list', id});
         }, {primary: true, disabled: !codes.length || runner.busy(), title: runner.busy() ? '上一项还在进行，完成后再开始' : ''}))];
@@ -510,7 +570,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     if (!visible) return;
     renderBar();
     renderRunner();
-    const key = JSON.stringify([route.page, route.id, route.filter, store.site]) + (route.page === 'new' ? ':' + wizard.step : '');
+    const key = JSON.stringify([route.page, route.id, route.groupId, route.filter, store.site]) + (route.page === 'new' ? ':' + wizard.step : '');
     if (route.page === 'list' && !force && key === renderedPage) { renderTableOnly(); return; }
     if (route.page === 'new' && !force && key === renderedPage) return;  // never wipe what the operator is typing
     renderedPage = key;

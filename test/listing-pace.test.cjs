@@ -50,7 +50,7 @@ const settle = async (runner, phases, limit = 4000) => {
 
 test('usage.wait: rest between segments, hourly and daily allowance', async () => {
   const {usage, PACE_DEFAULTS} = await import('../ui/listing-runner.js');
-  const p = {...PACE_DEFAULTS};
+  const p = {...PACE_DEFAULTS, restMinutes:5, hourly:90, daily:450};
   const t0 = new Date(2026, 10, 9, 10, 0, 0).getTime();
   data.delete('edup:listing:giga-usage:v1');
   assert.equal(usage.wait('US', 30, t0, p).ms, 0, 'first segment goes at once');
@@ -66,15 +66,16 @@ test('usage.wait: rest between segments, hourly and daily allowance', async () =
   assert.equal(daily.why, 'daily');
   assert.equal(new Date(t0 + 5 * 3600e3 + daily.ms).getHours(), 9);
   assert.equal(new Date(t0 + 5 * 3600e3 + daily.ms).getDate(), 10);
-  data.set('edup:listing:pace:v1', JSON.stringify({daily: 2000, hourly: 0, restMinutes: 0}));
+  data.set('edup:listing:pace:v2', JSON.stringify({daily: 2000, hourly: 0, restMinutes: 0}));
   const {pace} = await import('../ui/listing-runner.js');
   assert.deepEqual([pace().daily, pace().hourly, pace().restMinutes], [2000, 0, 0], 'operator override without a release');
-  data.delete('edup:listing:pace:v1');
+  data.delete('edup:listing:pace:v2');
   data.delete('edup:listing:giga-usage:v1');
 });
 
 test('run: segments are spaced, verification pauses with a desktop notice until 继续', async () => {
   const {runner} = await import('../ui/listing-runner.js');
+  data.set('edup:listing:pace:v2', JSON.stringify({restMinutes:5,hourly:90,daily:450}));
   runner.start({kind: 'prepare', site: 'US', codes, listId: null});
   const need = await settle(runner, ['need', 'done']);
   assert.equal(need.phase, 'need');

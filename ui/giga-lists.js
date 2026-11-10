@@ -54,7 +54,7 @@ export function backupSkuList(call, {id = crypto.randomUUID(), site, source, cod
   return record;
 }
 
-export function skuListPanel({call, site, offline, onResume}) {
+export function skuListPanel({call, site, offline, onResume, onRestore}) {
   const box = el('details', undefined, 'operation-preview');
   const list = el('select'), body = el('div'), status = el('p'), refresh = el('button', '刷新清单');
   list.setAttribute('aria-label', '已备份的 SKU 清单');
@@ -84,7 +84,16 @@ export function skuListPanel({call, site, offline, onResume}) {
       const resume = el('button', '继续剩下的');
       resume.disabled = result.remaining.length === 0;
       resume.onclick = () => onResume(result.remaining);
-      body.append(resume);
+      if (onRestore) {
+        const restore = el('button', '恢复为 100 款分组存档');
+        restore.onclick = async () => {
+          restore.disabled = true;
+          try { await onRestore(result); }
+          catch (error) { status.textContent = '恢复失败（' + skuListError(error) + '）。'; }
+          finally { restore.disabled = false; }
+        };
+        body.append(restore);
+      } else body.append(resume);
     } catch (error) {
       if (request === sequence) status.textContent = '读取清单进度失败（' + skuListError(error) + '）。';
     }

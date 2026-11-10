@@ -43,7 +43,8 @@ export function createStore({call, getSnapshot, isOffline}) {
         c = {...c, stage: 'screening', owner: 'program', headline: '在大健页面筛选中', detail: '', primary: null};
       merged.push(c);
     }
-    return merged.map(c => ({...c, listId: list.id, listSource: list.source}));
+    const ownCodes = new Set(list.codes);
+    return merged.filter(c => !ownCodes.size || ownCodes.has(c.sku)).map(c => ({...c, listId: list.id, listSource: list.source}));
   }
 
   async function fetchJob(id) {

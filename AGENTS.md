@@ -16,6 +16,9 @@ The public client repository must not contain private service configuration or d
 - private-backend/: local private source; excluded from public export.
 
 ## Current state and rules
+0.8.5 adds saved100-SKU archive groups and30-second browser CD without client hourly/daily quotas.
+Group selection and restart recovery use existing list and request owners; see docs/listing-groups.md.
+Production installation is recorded separately from code/test completion.
 The client uses one desktop asset handler and real renderer readiness.
 Native offline, skipped-version and missing-dependency rollback checks pass.
 Release/install acceptance must be verified separately on each real device.
@@ -34,6 +37,7 @@ Only US listing execution has passed acceptance; do not silently route other sit
 Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus control.
 
 ## Read when relevant
+- docs/listing-groups.md: saved group membership, queue recovery and pacing changes.
 - docs/giga-browser.md: region-account check and favorites before new product intake.
 - docs/client.md: renderer loading, IPC, health and submission availability.
 - docs/updates.md: signed full application patches, skipped versions and recovery.

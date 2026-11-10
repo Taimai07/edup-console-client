@@ -6,10 +6,11 @@ import {openSegmentJournal} from './giga-segment-journal.js';
 import {reconcileGigaFavorites} from './giga-browser.js';
 import {friendlyError} from './notices.js';
 import {isExcludedRate} from './listing-states.js';
+import {archiveGroups} from './listing-groups.js';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const KEY = {screens: 'edup:listing:screens:v1', skips: 'edup:listing:skips:v1', lists: 'edup:listing:lists:v1', run: 'edup:listing:run:v1',
-  pace: 'edup:listing:pace:v1', usage: 'edup:listing:giga-usage:v1'};
+  pace: 'edup:listing:pace:v2', usage: 'edup:listing:giga-usage:v1', queue: 'edup:listing:queue:v1'};
 const read = (key, fallback) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
 const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* per-viewer convenience only */ } };
 const REGION = {US: 'USA', DE: 'DEU', GB: 'GBR', CA: 'CAN', JP: 'JPN'};
@@ -39,8 +40,17 @@ export const local = {
   lists: () => read(KEY.lists, []),
   saveList(list) {
     const all = read(KEY.lists, []).filter(x => x.id !== list.id);
-    all.unshift(list);
-    write(KEY.lists, all.slice(0, 200));
+    all.unshift({...list, groups: archiveGroups(list)});
+    // Archives must not silently evict older user lists or ignore storage failure.
+    localStorage.setItem(KEY.lists, JSON.stringify(all));
+  },
+  ensureGroups(listId) {
+    const all = read(KEY.lists, []), list = all.find(x => x.id === listId);
+    if (list && !Array.isArray(list.groups)) {
+      list.groups = archiveGroups(list);
+      localStorage.setItem(KEY.lists, JSON.stringify(all));
+    }
+    return list;
   },
   // Remembers whether the server has a copy of this list (sku_list_save), so a failed backup is
   // still visible after the app restarts.
@@ -75,6 +85,7 @@ const listeners = new Set();
 const queue = [];
 let stopRequested = false, resumeSignal = null;
 function emit(patch) { state = {...state, ...patch, queue: queue.length}; for (const fn of listeners) fn(state); }
+const persistQueue = () => localStorage.setItem(KEY.queue, JSON.stringify(queue));
 
 // 11-09: a list of 2000+ codes stopped for good at the first browser hiccup and each segment waited
 // for the server before the browser started the next one. Now every step retries on its own, a
@@ -87,15 +98,13 @@ const codeOf = error => (String(error?.message || error || '').match(/\b[A-Z][A-
 const unknownOutcome = error => error?.outcome === 'unknown' || String(error?.message || '').includes('OUTCOME_UNKNOWN');
 const stopped = () => Object.assign(Error('LISTING_RUN_STOPPED'), {stopped: true});
 
-// 11-09 evening: after a 2000+ list GIGA started asking for a slider puzzle and answering the
-// extension with empty pages. The program never solves or avoids the puzzle. It keeps the 大健
-// account well under that level, and if GIGA asks anyway it pauses until the operator has
-// solved it on the page. Defaults per computer and site; `edup:listing:pace:v1` in localStorage
-// can override any of them without a release.
+// Owner policy: 30-second CD, no client hour/day quotas. v2 deliberately does not inherit
+// old v1 quotas. Verification and site errors still pause/back off; ID navigation is no
+// guarantee against supplier throttling. Usage history and recovery journals remain intact.
 export const PACE_DEFAULTS = Object.freeze({
-  restMinutes: 5,       // between two browser segments
-  hourly: 90,           // SKUs read on the 大健 page per rolling hour
-  daily: 450,           // SKUs read per calendar day
+  restMinutes: 0.5,     // 30 seconds between browser dispatches
+  hourly: 0,           // no client hourly quota; site responses still govern retries
+  daily: 0,            // no client daily quota
   resumeHour: 9,        // when the daily allowance is used up, carry on the next day from 9:00
 });
 export function pace() {
@@ -151,6 +160,7 @@ export const usage = {
   },
 };
 const minutes = ms => Math.max(1, Math.ceil(ms / 60e3));
+const duration = ms => ms < 60e3 ? Math.ceil(ms / 1000) + ' 秒' : minutes(ms) + ' 分钟';
 const clock = ms => { const d = new Date(Date.now() + ms); return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
 
 // Keeps the 大健 page reads within the allowance. Waiting can be paused like any other wait.
@@ -164,7 +174,7 @@ async function throttle(site, n, update) {
     const text = w.why === 'daily' ? (w.resumeHeld ? '按每日额度恢复时间等待' : '今日已安排读取 ' + w.day + '/' + p.daily + ' 款次（含重试），剩余 ' + w.remaining + '；本段需要 ' + n + ' 款')
         + '，' + clock(w.ms) + ' 自动继续（软件要开着）'
       : w.why === 'hourly' ? '本小时已安排读取 ' + w.hour + '/' + p.hourly + ' 款次（含重试），剩余 ' + w.remaining + '；本段需要 ' + n + ' 款，' + minutes(w.ms) + ' 分钟后自动继续'
-      : '按节奏休息，' + minutes(w.ms) + ' 分钟后读下一段（今日已安排读取 ' + w.day + ' 款次，含重试）';
+      : '按节奏休息，' + duration(w.ms) + '后继续读取（今日已安排读取 ' + w.day + ' 款次，含重试）';
     update(text);
     await pause(Math.min(w.ms, 60e3));
   }
@@ -488,20 +498,30 @@ async function pump() {
   while (queue.length && !['running', 'need'].includes(state.phase)) {
     const task = queue.shift();
     stopRequested = false;
-    try { await run(task); }
+    try {
+      // Persist active before removing it from the saved queue; interrupted recovery deduplicates.
+      localStorage.setItem(KEY.run, JSON.stringify({...task, at: Date.now()}));
+      persistQueue();
+      await run(task);
+    }
     catch (error) {
-      if (error.cancelled) { emit({phase: 'paused', need: null, message: '已取消，没有发给服务器。'}); continue; }
-      if (error.stopped) { emit({phase: 'paused', need: null, left: state.task?.codes || [], message: '已暂停。已交给服务器的会照常准备，没交的点「继续剩下的」接着做。'}); continue; }
+      if (error.cancelled || error.stopped) {
+        emit({phase:'paused',need:null,left:state.task?.codes || task.codes,
+          message:'已暂停。已交给服务器的任务保留，剩下的商品和分组可点「继续剩下的」。'});
+        break;
+      }
       const f = friendlyError(error);
       emit({phase: 'error', need: error.screenRequired ? 'rescreen' : null, unknown: !!error.admitUnknown,
         message: error.admitUnknown ? '服务器可能已经收到这一段。先看清单里的结果，不要重复开始。' : f.title + '：' + f.message,
         error: {code: f.code, requestId: error.requestId || f.requestId || ''}});
       queue.length = 0;
+      // Preserve the unstarted saved queue for explicit recovery after an error.
     }
     // A finished run with leftovers stays as "上次有一份没做完" so a restart can pick them up.
     if (state.phase === 'done' && state.failedCodes?.length)
       write(KEY.run, {...state.task, codes: state.failedCodes, label: (state.label || '上架') + ' · 没做成的', fresh: true, at: Date.now()});
     else if (state.phase === 'done' || (state.phase === 'paused' && !state.left?.length)) try { localStorage.removeItem(KEY.run); } catch { /* ignore */ }
+    if (state.phase === 'paused' || state.phase === 'error') break;
   }
   emit({});
 }
@@ -514,7 +534,12 @@ export const runner = {
   start(task) {
     if (!window.edup?.maintenance) throw Error('GIGA_BROWSER_DESKTOP_REQUIRED');
     if (!task.codes?.length) return;
+    if (!['running','need','queued'].includes(state.phase) && (queue.length || read(KEY.queue, []).length))
+      throw Error('LISTING_QUEUE_RESUME_REQUIRED');
+    if (task.groupId && ([...queue, ...(['running','need'].includes(state.phase) ? [state.task] : [])]
+      .some(t => t?.listId === task.listId && t?.groupId === task.groupId))) return;
     queue.push(task);
+    try { persistQueue(); } catch (error) { queue.pop(); throw error; }
     if (!['running', 'need'].includes(state.phase)) { emit({phase: 'queued'}); pump(); }
     else emit({});
   },
@@ -525,6 +550,27 @@ export const runner = {
   busy: () => ['running', 'need'].includes(state.phase),
   // A run cut short by closing the app (journal keeps finished segments).
   interrupted() { return state.phase === 'idle' ? read(KEY.run, null) : null; },
+  savedQueue() { return read(KEY.queue, []); },
+  discardPending() {
+    if (runner.busy()) throw Error('LISTING_RUN_ACTIVE');
+    localStorage.removeItem(KEY.queue);
+    localStorage.removeItem(KEY.run);
+    queue.length = 0;
+    emit({phase:'idle', message:'', error:null, unknown:false});
+  },
+  resumeSaved() {
+    if (runner.busy()) return;
+    const active = read(KEY.run, null), saved = read(KEY.queue, []);
+    const tasks = [active, ...saved].filter(Boolean);
+    const seen = new Set();
+    queue.length = 0;
+    for (const task of tasks) {
+      const key = JSON.stringify([task.site,task.kind,task.listId,task.groupId,task.codes,task.parentJobId]);
+      if (!seen.has(key)) { seen.add(key); queue.push(task); }
+    }
+    persistQueue();
+    if (queue.length) { emit({phase: 'queued'}); pump(); }
+  },
   forgetInterrupted() { try { localStorage.removeItem(KEY.run); } catch { /* ignore */ } },
   async reconcile(id, onText = () => {}) {
     const result = await reconcileGigaFavorites(id, () => true, onText);

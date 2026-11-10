@@ -19,10 +19,8 @@ preservation. An actual second household PC is a separate acceptance surface fro
 two simulated profiles. Server request records can show its version/connectivity,
 but cannot prove its window renders correctly.
 
-The current locally accepted client is 0.7.13. The startup repair was validated by
-direct migration from official 0.7.4 and 0.7.7 payloads using separate synthetic
-profiles; subsequent signed patches preserve that bootstrap and renderer check.
-Local packaged installation reports renderer readiness and preserved state.
-These results do not certify the second physical computer's display or network.
-If a broken older UI cannot reach its update page, the signed full installer
-provides an independent repair route; it preserves the product's user-data folder.
+The last verified stable client is 0.8.4, installed on both physical PCs with
+signed-patch and hidden renderer acceptance. Candidate0.8.5 adds persistent100-SKU
+groups and revised pacing. Release CI, signed feed and per-PC installation receipts
+must be verified before reporting the candidate as installed. Extension/native0.4.9
+is unchanged; actual reader20/20 acceptance is separate from full background reload.

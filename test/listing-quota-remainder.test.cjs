@@ -5,6 +5,7 @@ let clock = new Date(2026, 10, 10, 12, 0).getTime();
 Date.now = () => clock;
 global.setTimeout = (callback, delay = 0, ...args) => timers(() => {clock += Math.max(0, delay);callback(...args);}, 0);
 const data = new Map(), started = [], admitted = [];
+data.set('edup:listing:pace:v2',JSON.stringify({restMinutes:5,hourly:90,daily:450}));
 global.localStorage = {getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,String(value)),removeItem:key=>data.delete(key)};
 global.Notification = function() {};
 global.window = {edup:{

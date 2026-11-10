@@ -28,6 +28,7 @@ jobs:
       - run: node --test test/listing-runner.test.cjs
       - run: node --test test/listing-pace.test.cjs
       - run: node --test test/listing-quota-remainder.test.cjs
+      - run: node --test test/listing-groups.test.cjs
       - run: node --test test/giga-known-products.test.cjs
       - run: node --test test/giga-read-status.test.cjs
       - run: node --test test/listing-runner-recovery.test.cjs
@@ -51,7 +52,9 @@ jobs:
         run: node test/run-native-continuation.cjs
       - name: Verify GIGA browser pre-step without user data or supplier writes
         run: node test/run-native-giga-browser.cjs
-      - name: Build application-only patch artifact
+      - name: Verify persistent group selection in an isolated Electron renderer
+        run: node test/run-native-listing-groups.cjs
+      - name: Build application-only patch artifact payload
         run: node scripts/build-app-patch.cjs
       - name: Verify overwrite install and protected Windows storage on isolated runner
         shell: pwsh
@@ -67,6 +70,7 @@ jobs:
             dist/patch-electron-receipt.json
             dist/native-continuation-receipt.json
             dist/native-giga-browser-receipt.json
+            dist/native-listing-groups-receipt.json
       - name: Publish new version without replacing existing releases
         if: github.ref == 'refs/heads/main'
         shell: pwsh
