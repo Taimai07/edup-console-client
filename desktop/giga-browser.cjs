@@ -8,6 +8,7 @@ const productCode = /^[A-Z0-9][A-Z0-9_.-]{2,39}$/;
 const controls = /[\x00-\x1f\x7f]/;
 const KNOWN_LIMIT = 3000;
 const RATE_READ = ['RATE_LOW', 'RATE_NA', 'RATE_MEDIUM', 'RATE_HIGH'];
+const READ_RECEIPT_TTL = 3 * 24 * 60 * 60;
 class GigaBrowser {
   constructor({directory, now = () => Date.now() / 1000} = {}) { this.directory = directory; this.now = now; }
   root() {
@@ -208,7 +209,7 @@ class GigaBrowser {
       const readOnly = ['read_rates', 'inspect'].includes(prior.op) || (prior.op==='favorites'&&prior.reconcileOnly===true) ||
         (prior.op === 'store' && ['resolve', 'page'].includes(prior.action));
       const readback=fields.reconcileOnly===true&&privateFields.reconciles===prior.id;
-      if (prior.expiresAt > this.now() || (!readOnly && !readback && this.read(prior.id + '.dispatch.json')))
+      if ((prior.expiresAt > this.now() && !this.readInterrupted(prior)) || (!readOnly && !readback && this.read(prior.id + '.dispatch.json')))
         throw Error('GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION');
     }
     const id = crypto.randomUUID(), task = {id, expiresAt: this.now() + 1800, ...fields};
@@ -313,17 +314,71 @@ class GigaBrowser {
     this.remember(task.site, rows);
     return {...base, total: task.total, page: task.page, items: rows};
   }
+  readInterrupted(task) {
+    if (task.op !== 'read_rates') return false;
+    const dispatched = this.read(task.id + '.dispatch.json');
+    const connection = this.read('connection.json');
+    return Number.isFinite(dispatched?.at) && Number.isFinite(connection?.connectedAt) &&
+      connection.connectedAt > dispatched.at;
+  }
   task(id) {
     if (typeof id !== 'string' || !/^[a-f0-9-]{36}$/.test(id)) throw Error('GIGA_BROWSER_TASK_ID_INVALID');
     const task = this.read(id + '.client-task.json');
     if (!task || task.id !== id) throw Error('GIGA_BROWSER_TASK_NOT_FOUND');
-    const saved = this.read(id + '.result.json');
+    let received = null;
+    try {
+      const saved = this.read(id + '.result.json');
+      const finished = Date.parse(saved?.result?.finishedAt || '') / 1000;
+      if (saved) received = Number.isFinite(saved.at) ? saved.at : Number.isFinite(finished) ? finished : task.expiresAt - 1800;
+      return this.recordTaskStatus(task, this.readTaskStatus(task, saved, received), received);
+    } catch (error) {
+      this.recordTaskStatus(task, {id, state: 'rejected', code: /^[A-Z][A-Z0-9_]{0,99}$/.test(error.message || '')
+        ? error.message : 'GIGA_BROWSER_RECEIPT_READ_FAILED'}, received);
+      throw error;
+    }
+  }
+  recordTaskStatus(task, status, received) {
+    try {
+      const name = task.id + '.client-status.json';
+      const value = {id: task.id, state: status.state, code: status.code || null,
+        executionExpiresAt: task.expiresAt, receiptAt: received,
+        receiptValidUntil: task.op === 'read_rates' && received !== null ? received + READ_RECEIPT_TTL : null};
+      const prior = this.read(name);
+      if (!prior || Object.keys(value).some(key => prior[key] !== value[key])) this.write(name, {...value, at: this.now()});
+    } catch (_) { /* State recording must not change business decisions. */ }
+    try {
+      const saved = this.read(task.id + '.diagnostics.json');
+      if (saved?.id === task.id && Array.isArray(saved.events)) {
+        const last = saved.events.at(-1);
+        const error = [...saved.events].reverse().find(row => /^[A-Z][A-Z0-9_]{0,99}$/.test(row.errorCode || ''));
+        status.diagnostics = {updatedAt: saved.updatedAt, eventCount: saved.totalEvents,
+          retainedCount: saved.events.length, droppedEvents: saved.droppedEvents || 0,
+          lastEvent: /^[a-z_]{1,40}$/.test(last?.event || '') ? last.event : null,
+          lastErrorCode: error?.errorCode || null};
+      }
+    } catch (_) { /* Corrupt optional diagnostics do not invalidate a valid receipt. */ }
+    return status;
+  }
+  readTaskStatus(task, saved, received) {
+    const {id} = task;
     if (task.op === 'store') {
       if (task.expiresAt < this.now()) return {id, state:'stopped', code:'TASK_EXPIRED'};
       if (saved) return this.storeReceipt(task, saved.result);
     }
-    if (!saved) return {id, state: this.read(id + '.dispatch.json') ? 'running_in_browser' : 'waiting_for_browser'};
-    if (task.op === 'read_rates' && task.expiresAt < this.now()) return {id, state:'stopped', code:'TASK_EXPIRED'};
+    if (!saved) {
+      if (this.readInterrupted(task)) return {id, state: 'stopped', code: 'GIGA_BROWSER_READ_INTERRUPTED'};
+      if (task.op === 'read_rates' && task.expiresAt < this.now()) return {id, state: 'stopped', code: 'TASK_EXPIRED'};
+      const dispatched = this.read(id + '.dispatch.json');
+      const progress = this.read(id + '.progress.json');
+      return {id, state: dispatched ? 'running_in_browser' : 'waiting_for_browser',
+        elapsedSeconds: dispatched ? Math.max(0, Math.floor(this.now() - dispatched.at)) : 0,
+        ...(progress?.id === id ? {progress: progress.progress} : {})};
+    }
+    if (task.op === 'read_rates') {
+      // Execution expiry bounds waiting. Completed evidence has its own three-day lifetime.
+      const age = this.now() - received;
+      if (age < -5 || age > READ_RECEIPT_TTL) return {id, state: 'stopped', code: 'GIGA_READ_RECEIPT_EXPIRED'};
+    }
     return this.productReceipt(task, saved.result);
   }
   productReceipt(task, result) {

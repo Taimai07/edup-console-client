@@ -28,6 +28,7 @@ jobs:
       - run: node --test test/listing-runner.test.cjs
       - run: node --test test/listing-pace.test.cjs
       - run: node --test test/giga-known-products.test.cjs
+      - run: node --test test/giga-read-status.test.cjs
       - run: node --test test/listing-runner-recovery.test.cjs
         env:
           EDUP_RETRY_PROBE: accepted

@@ -177,7 +177,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     const leftovers = s.phase === 'done' ? (s.failedCodes || []) : [];
     const tone = s.phase === 'error' ? (s.unknown ? 'unknown' : 'error') : s.phase === 'need' || leftovers.length ? 'warn' : s.phase === 'done' ? 'success' : 'info';
     const head = s.phase === 'running' || s.phase === 'queued' ? (s.label || '处理中') + (s.segments > 1 ? ' · 第 ' + (s.segment || 1) + '/' + s.segments + ' 段' : '')
-      : s.phase === 'need' ? (s.need === 'verify' ? '大健要求人工验证' : '等大健页面连好') : s.phase === 'done' ? (leftovers.length ? '完成，有 ' + leftovers.length + ' 款没做成' : '完成')
+      : s.phase === 'need' ? (s.need === 'verify' ? '大健要求人工验证' : s.need === 'detail' ? '请检查大健商品页面' : '等大健页面连好') : s.phase === 'done' ? (leftovers.length ? '完成，有 ' + leftovers.length + ' 款没做成' : '完成')
       : s.phase === 'paused' ? '已暂停' : s.unknown ? '结果待确认' : '没完成';
     const box = h('div', {class: 'lst-banner lst-banner--' + tone, role: s.phase === 'error' ? 'alert' : 'status'},
       ['running', 'queued'].includes(s.phase) ? h('span', {class: 'lst-spinner', 'aria-hidden': 'true'}) : null,
@@ -187,7 +187,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
       s.queue ? h('span', {class: 'muted'}, '后面还有 ' + s.queue + ' 项排队') : null);
     const actions = h('div', {class: 'lst-actions'});
     if (s.phase === 'running' && s.segments > 1 && !s.stopping) actions.append(btn('这一段完成后暂停', () => runner.stop()));
-    if (s.phase === 'need' && s.need === 'verify') actions.append(btn('已完成验证，继续', () => runner.continue(), {primary: true}),
+    if (s.phase === 'need' && ['verify', 'detail'].includes(s.need)) actions.append(btn(s.need === 'detail' ? '已检查页面，继续' : '已完成验证，继续', () => runner.continue(), {primary: true}),
       btn('取消', () => runner.cancel()));
     else if (s.phase === 'need') actions.append(btn('已连好，继续', () => runner.continue(), {primary: true}), btn('打开连接说明', () => { helpOpen = true; render(); }),
       btn('取消', () => runner.cancel()));

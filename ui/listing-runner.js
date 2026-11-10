@@ -104,8 +104,9 @@ export function pace() {
   for (const key of Object.keys(out)) if (Number.isFinite(saved?.[key]) && saved[key] >= 0) out[key] = saved[key];
   return out;
 }
-const VERIFY = ['GIGA_VERIFICATION_REQUIRED', 'GIGA_RESPONSE_INVALID'];
+const VERIFY = ['GIGA_VERIFICATION_REQUIRED', 'GIGA_RESPONSE_INVALID', 'GIGA_DETAIL_REVIEW_REQUIRED'];
 const dayOf = ms => { const d = new Date(ms); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const DAILY_RESUME = 'edup:listing:giga-daily-resume:v1';
 export const usage = {
   rows: () => read(KEY.usage, []).filter(row => row && Number.isFinite(row.at) && Number.isFinite(row.n)),
   record(site, n, now = Date.now()) {
@@ -118,8 +119,15 @@ export const usage = {
     const rows = usage.rows().filter(row => row.site === site);
     const today = dayOf(now);
     const day = rows.filter(row => dayOf(row.at) === today).reduce((sum, row) => sum + row.n, 0);
+    const resumes = read(DAILY_RESUME, {}), resume = resumes[site];
+    if (p.daily && resume?.limit === p.daily && Number.isFinite(resume.until) && now < resume.until &&
+        resume.day !== today && rows.some(row => dayOf(row.at) === resume.day)) {
+      return {ms: resume.until - now, why: 'daily', day};
+    }
     if (p.daily && day > 0 && day + n > p.daily) {
       const next = new Date(now); next.setDate(next.getDate() + 1); next.setHours(p.resumeHour, 0, 0, 0);
+      resumes[site] = {day: today, until: next.getTime(), limit: p.daily};
+      write(DAILY_RESUME, resumes);
       return {ms: next.getTime() - now, why: 'daily', day};
     }
     const hour = rows.filter(row => now - row.at < 3600e3).sort((a, b) => a.at - b.at);
@@ -159,9 +167,11 @@ function desktopNotice(title, body) {
 // session under verification only make it worse. 继续 tries again, 取消 ends the run.
 async function waitForVerification(code, count) {
   note({code, step: 'verification'});
-  const text = '大健要求人工验证，' + count + ' 款暂停。请在大健页面随便搜一个商品，按提示完成拼图验证，然后点「已完成验证，继续」。';
-  desktopNotice('EDUPLINK：大健要求人工验证', '请到大健页面完成拼图验证，再回软件点继续。');
-  emit({phase: 'need', need: 'verify', message: text});
+  const detail = code === 'GIGA_DETAIL_REVIEW_REQUIRED';
+  const text = detail ? '商品详情页未能核实，' + count + ' 款已暂停。请检查大健页面是否有验证、登录或商品异常提示，处理后点继续。'
+    : '大健要求人工验证，' + count + ' 款暂停。请在大健页面随便搜一个商品，按提示完成拼图验证，然后点「已完成验证，继续」。';
+  desktopNotice(detail ? 'EDUPLINK：请检查大健商品页面' : 'EDUPLINK：大健要求人工验证', text);
+  emit({phase: 'need', need: detail ? 'detail' : 'verify', message: text});
   const go = await new Promise(resolve => { resumeSignal = resolve; });
   resumeSignal = null;
   if (go === false) throw Object.assign(Error('LISTING_RUN_CANCELLED'), {cancelled: true});
@@ -197,6 +207,15 @@ async function checkFavorites(task, update) {
       return {...receipt, excluded: [...excluded, ...(receipt.excluded || [])]};
     } else if (receipt.state === 'stopped') {
       throw Error(receipt.code);
+    } else if (receipt.state === 'running_in_browser') {
+      const stages = {starting: '开始核对', session: '核对买家账号', search: '搜索商品编号',
+        list: '核对商品列表', detail: '读取商品退货率', favorite: '核对收藏'};
+      const p = receipt.progress;
+      const label = stages[p?.stage] || '等待浏览器返回结果';
+      const count = Number.isInteger(p?.index) && Number.isInteger(p?.total) && p.index > 0 && p.index <= p.total
+        ? ' · 第 ' + p.index + '/' + p.total + ' 款' : '';
+      const elapsed = Number.isFinite(receipt.elapsedSeconds) ? ' · 已用 ' + Math.floor(receipt.elapsedSeconds / 60) + ' 分钟' : '';
+      update(label + count + elapsed);
     }
     await wait(2000);
   }
