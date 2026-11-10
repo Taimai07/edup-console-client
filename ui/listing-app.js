@@ -182,7 +182,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
     const box = h('div', {class: 'lst-banner lst-banner--' + tone, role: s.phase === 'error' ? 'alert' : 'status'},
       ['running', 'queued'].includes(s.phase) ? h('span', {class: 'lst-spinner', 'aria-hidden': 'true'}) : null,
       h('strong', {}, head), h('span', {}, s.message || ''),
-      s.total ? h('span', {class: 'muted'}, '已处理 ' + (s.done || 0) + '/' + s.total + ' 款' + (s.excluded ? '（退货率不合格排除 ' + s.excluded + ' 款）' : '')
+      s.total ? h('span', {class: 'muted'}, '清单已处理 ' + (s.done || 0) + '/' + s.total + ' 款' + (s.recovered ? '（恢复已有进度 ' + s.recovered + ' 款）' : '') + (s.excluded ? '（退货率不合格排除 ' + s.excluded + ' 款）' : '')
         + (s.phase === 'running' && s.failed ? '；' + s.failed + ' 款自动重试后仍没做成，最后可一键重试' : '')) : null,
       s.queue ? h('span', {class: 'muted'}, '后面还有 ' + s.queue + ' 项排队') : null);
     const actions = h('div', {class: 'lst-actions'});

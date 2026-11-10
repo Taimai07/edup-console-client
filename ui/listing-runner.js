@@ -114,6 +114,12 @@ export const usage = {
     rows.push({site, n, at: now});
     write(KEY.usage, rows);
   },
+  available(site, now = Date.now(), p = pace()) {
+    const rows = usage.rows().filter(row => row.site === site);
+    const day = rows.filter(row => dayOf(row.at) === dayOf(now)).reduce((sum, row) => sum + row.n, 0);
+    const hour = rows.filter(row => now - row.at < 3600e3).reduce((sum, row) => sum + row.n, 0);
+    return Math.max(0, Math.floor(Math.min(p.daily ? p.daily - day : Infinity, p.hourly ? p.hourly - hour : Infinity)));
+  },
   // How long to wait before `n` more SKUs may be read for `site`, and why. 0 = go now.
   wait(site, n, now = Date.now(), p = pace()) {
     const rows = usage.rows().filter(row => row.site === site);
@@ -122,16 +128,17 @@ export const usage = {
     const resumes = read(DAILY_RESUME, {}), resume = resumes[site];
     if (p.daily && resume?.limit === p.daily && Number.isFinite(resume.until) && now < resume.until &&
         resume.day !== today && rows.some(row => dayOf(row.at) === resume.day)) {
-      return {ms: resume.until - now, why: 'daily', day};
+      return {ms: resume.until - now, why: 'daily', day, remaining: Math.max(0, p.daily - day), resumeHeld: true};
     }
-    if (p.daily && day > 0 && day + n > p.daily) {
+    if (p.daily && day + n > p.daily) {
       const next = new Date(now); next.setDate(next.getDate() + 1); next.setHours(p.resumeHour, 0, 0, 0);
       resumes[site] = {day: today, until: next.getTime(), limit: p.daily};
       write(DAILY_RESUME, resumes);
-      return {ms: next.getTime() - now, why: 'daily', day};
+      return {ms: next.getTime() - now, why: 'daily', day, remaining: Math.max(0, p.daily - day)};
     }
     const hour = rows.filter(row => now - row.at < 3600e3).sort((a, b) => a.at - b.at);
-    let used = hour.reduce((sum, row) => sum + row.n, 0), until = now;
+    const hourUsed = hour.reduce((sum, row) => sum + row.n, 0);
+    let used = hourUsed, until = now;
     for (const row of hour) {
       if (!p.hourly || used === 0 || used + n <= p.hourly) break;
       used -= row.n; until = row.at + 3600e3;
@@ -139,7 +146,8 @@ export const usage = {
     const last = rows.reduce((max, row) => Math.max(max, row.at), 0);
     const rest = last ? last + p.restMinutes * 60e3 : 0;
     const at = Math.max(until, rest);
-    return at > now ? {ms: at - now, why: until >= rest ? 'hourly' : 'rest', day} : {ms: 0, day};
+    return at > now ? {ms: at - now, why: until >= rest ? 'hourly' : 'rest', day, hour: hourUsed,
+      remaining: p.hourly ? Math.max(0, p.hourly - hourUsed) : null} : {ms: 0, day};
   },
 };
 const minutes = ms => Math.max(1, Math.ceil(ms / 60e3));
@@ -149,11 +157,14 @@ const clock = ms => { const d = new Date(Date.now() + ms); return (d.getMonth() 
 async function throttle(site, n, update) {
   for (;;) {
     if (stopRequested) throw stopped();
-    const p = pace(), w = usage.wait(site, n, Date.now(), p);
+    const p = pace();
+    if ((p.daily && n > p.daily) || (p.hourly && n > p.hourly)) throw Error('LISTING_PACE_SEGMENT_TOO_LARGE');
+    const w = usage.wait(site, n, Date.now(), p);
     if (!w.ms) return;
-    const text = w.why === 'daily' ? '今天已读 ' + w.day + ' 款，达到每天 ' + p.daily + ' 款的上限，' + clock(w.ms) + ' 自动继续（软件要开着）'
-      : w.why === 'hourly' ? '这一小时已读满 ' + p.hourly + ' 款，' + minutes(w.ms) + ' 分钟后自动继续'
-      : '按节奏休息，' + minutes(w.ms) + ' 分钟后读下一段（今天已读 ' + w.day + ' 款）';
+    const text = w.why === 'daily' ? (w.resumeHeld ? '按每日额度恢复时间等待' : '今日已安排读取 ' + w.day + '/' + p.daily + ' 款次（含重试），剩余 ' + w.remaining + '；本段需要 ' + n + ' 款')
+        + '，' + clock(w.ms) + ' 自动继续（软件要开着）'
+      : w.why === 'hourly' ? '本小时已安排读取 ' + w.hour + '/' + p.hourly + ' 款次（含重试），剩余 ' + w.remaining + '；本段需要 ' + n + ' 款，' + minutes(w.ms) + ' 分钟后自动继续'
+      : '按节奏休息，' + minutes(w.ms) + ' 分钟后读下一段（今日已安排读取 ' + w.day + ' 款次，含重试）';
     update(text);
     await pause(Math.min(w.ms, 60e3));
   }
@@ -260,6 +271,7 @@ async function screenSegment(codes, site, update) {
     } catch (error) {
       if (error.cancelled || error.stopped) throw error;
       const code = codeOf(error);
+      if (code === 'LISTING_PACE_SEGMENT_TOO_LARGE') throw error;
       if (CONNECTION.includes(code)) { await waitForBrowser(site, codes.length); continue; }
       if (VERIFY.includes(code)) { await waitForVerification(code, codes.length); continue; }
       if (code === 'GIGA_BROWSER_TASK_REQUIRES_RECONCILIATION') {
@@ -342,7 +354,8 @@ async function run(task) {
   const wanted = new Set(codes);
   const label = task.label || (kind === 'query' ? '查报价' : parentJobId ? '重新检查' : '准备上架');
   emit({phase: 'running', task: {...task, codes, journalCodes}, label, need: null, message: '正在核对已有进度', error: null, done: 0,
-    total: codes.length, segment: 0, segments: 0, excluded: 0, reconcileId: null, failed: 0, failedCodes: []});
+    total: codes.length, segment: 0, segments: 0, excluded: 0, reconcileId: null, failed: 0, failedCodes: [], recovered: 0,
+    stopping: false, left: [], unknown: false});
   write(KEY.run, {...task, codes, journalCodes, at: Date.now()});
   const journal = await openSegmentJournal(localStorage, {site, operation: op, parent: parentJobId, codes: journalCodes});
   const processed = new Set(), reserved = new Set(), earlier = [], pendingSegments = [];
@@ -364,6 +377,8 @@ async function run(task) {
     journal.seen(key, job);
     if (['queued', 'running', 'completed'].includes(job.state)) { prior.codes.forEach(c => processed.add(c)); if (job.state !== 'completed') earlier.push({job, key}); }
   }
+  const recovered = codes.filter(code => processed.has(code)).length;
+  emit({done: recovered, recovered});
   const remaining = codes.filter(c => !processed.has(c) && !reserved.has(c));
   if (!remaining.length && !earlier.length && !pendingSegments.length) { emit({phase: 'done', message: '这些商品都已经处理过，结果保留在清单里。'}); return; }
   // Receipts from a recent screening can be reused; only the rest needs the 大健 page.
@@ -394,8 +409,18 @@ async function run(task) {
       emit({phase: 'paused', message: '已暂停，还剩 ' + left.length + ' 款没交给服务器。已交给服务器的会照常准备。', left});
       return;
     }
-    const seg = segments[index], key = seg.key || seg.codes.join(',');
     const update = text => emit({phase: 'running', segment: index + 1, message: text});
+    let seg = segments[index];
+    if (!seg.key && !seg.receipt) {
+      await throttle(site, 1, update);
+      const available = usage.available(site);
+      if (available > 0 && available < seg.codes.length) {
+        segments.splice(index, 1, {codes: seg.codes.slice(0, available)}, {codes: seg.codes.slice(available)});
+        seg = segments[index];
+        emit({segments: segments.length});
+      }
+    }
+    const key = seg.key || seg.codes.join(',');
     let receipt = seg.receipt, unconfirmed = [];
     if (receipt) update('复用最近的筛选记录');
     try {

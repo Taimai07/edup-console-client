@@ -1,5 +1,5 @@
 const {createHash,sign,verify,createPublicKey}=require('node:crypto');
-const API_VERSION=1,VERSION='0.8.3';
+const API_VERSION=1,VERSION='0.8.4';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 function canonical(method,route,body,time,nonce,version){return ['edup-request-v1',method,route,digest(body),String(time),nonce,version].join('\n');}
 function pairMessage(code,publicKey){return 'edup-pair-v1\n'+digest(code)+'\n'+publicKey;}
