@@ -7,6 +7,7 @@ import {reconcileGigaFavorites} from './giga-browser.js';
 import {friendlyError} from './notices.js';
 import {isExcludedRate} from './listing-states.js';
 import {archiveGroups} from './listing-groups.js';
+import {storageCode} from './storage-state.js';
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const KEY = {screens: 'edup:listing:screens:v1', skips: 'edup:listing:skips:v1', lists: 'edup:listing:lists:v1', run: 'edup:listing:run:v1',
@@ -84,6 +85,7 @@ let state = {phase: 'idle', queue: 0};
 const listeners = new Set();
 const queue = [];
 let stopRequested = false, resumeSignal = null;
+let storageBlockedCode = null;
 function emit(patch) { state = {...state, ...patch, queue: queue.length}; for (const fn of listeners) fn(state); }
 const persistQueue = () => localStorage.setItem(KEY.queue, JSON.stringify(queue));
 
@@ -350,6 +352,8 @@ async function readJob(id) {
 async function waitJob(id, update) {
   for (;;) {
     const job = await readJob(id);
+    const blocked = storageCode(job);
+    if (blocked) throw Error(blocked);
     if (!job || !['queued', 'running'].includes(job.state)) return job;
     update('服务器正在准备上一段，浏览器这边已经可以接着做');
     await wait(5000);
@@ -382,6 +386,14 @@ async function run(task) {
       if (prior.codes.some(code => !wanted.has(code))) throw Error('GIGA_SEGMENT_JOURNAL_CONFLICT');
       pendingSegments.push({codes: prior.codes, key, previouslyUncertain: true});
       for (const code of key.split(',')) reserved.add(code);
+      continue;
+    }
+    if (storageCode(job)) {
+      // The server returned a definite terminal resource hold, not an unknown admission.
+      // Keep successful sibling SKUs, and retry only the unfinished items after manual resume.
+      journal.seen(key, {id:job.id, state:'failed'});
+      for (const row of job.result?.pipeline?.items || [])
+        if (row.sku && !storageCode(row)) processed.add(row.sku);
       continue;
     }
     journal.seen(key, job);
@@ -479,6 +491,7 @@ async function run(task) {
     } catch (error) {
       if (error.cancelled || error.stopped) throw error;
       const code = codeOf(error);
+      if (storageCode(error)) throw error;
       failed.push({codes: seg.codes, code, unknown: !!error.admitUnknown});
       note({code, step: 'segment', segment: index + 1, unknown: !!error.admitUnknown});
       emit({message: '第 ' + (index + 1) + ' 段没做成（' + code + '），先跳过，接着做下一段'});
@@ -534,6 +547,7 @@ export const runner = {
   // task: {kind:'prepare'|'query'|'recheck', site, codes, parentJobId?, listId?, label?, fresh?}
   // fresh: skip reusing recent screening receipts and read the 大健 page again.
   start(task) {
+    if (storageBlockedCode) throw Error(storageBlockedCode);
     if (!window.edup?.maintenance) throw Error('GIGA_BROWSER_DESKTOP_REQUIRED');
     if (!task.codes?.length) return;
     if (!['running','need','queued'].includes(state.phase) && (queue.length || read(KEY.queue, []).length))
@@ -553,6 +567,10 @@ export const runner = {
   // A run cut short by closing the app (journal keeps finished segments).
   interrupted() { return state.phase === 'idle' ? read(KEY.run, null) : null; },
   savedQueue() { return read(KEY.queue, []); },
+  setStorage(storage) {
+    storageBlockedCode = storage?.blocked ? storage.code || 'GIGA_SERVER_STORAGE_LOW' : null;
+    if (storageBlockedCode && runner.busy()) { stopRequested = true; emit({stopping:true}); }
+  },
   discardPending() {
     if (runner.busy()) throw Error('LISTING_RUN_ACTIVE');
     localStorage.removeItem(KEY.queue);
@@ -561,6 +579,7 @@ export const runner = {
     emit({phase:'idle', message:'', error:null, unknown:false});
   },
   resumeSaved() {
+    if (storageBlockedCode) throw Error(storageBlockedCode);
     if (runner.busy()) return;
     const active = read(KEY.run, null), saved = read(KEY.queue, []);
     const tasks = [active, ...saved].filter(Boolean);

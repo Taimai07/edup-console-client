@@ -10,6 +10,7 @@ import {backupSkuList, skuListPanel, renderModelUsage} from './giga-lists.js';
 import {extractCodes} from './sku-rules.js';
 import {notify, friendlyError} from './notices.js';
 import {archiveGroups, groupTask, restoredArchive} from './listing-groups.js';
+import {storageMessage} from './storage-state.js';
 
 const PAGES = [['home', '首页'], ['new', '新建上架'], ['lists', '清单'], ['opening', '开卖核对']];
 const FILTERS = [['all', '全部'], ['you', '等你'], ['program', '程序'], ['platform', '亚马逊'], ['maintainer', '维护者'], ['selling', '在售'], ['off', '已排除']];
@@ -53,6 +54,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
       onDone: () => refreshRoots(cards)});
     if (action === 'answer_questions') return openQuestions({cards, site, call, runner, onDone: () => refreshRoots(cards)});
     if (RUNNER_ACTIONS.has(action)) {
+      if (store.service?.storage?.blocked) throw Error(store.service.storage.code || 'GIGA_SERVER_STORAGE_LOW');
       const fresh = action === 'rescreen';
       const withJob = new Map(), withoutJob = new Map();
       for (const c of cards) {
@@ -168,6 +170,8 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
   function renderRunner() {
     const s = runner.state, interrupted = runner.interrupted();
     runnerBox.replaceChildren();
+    const storage = store.service?.storage;
+    if (storage?.blocked) runnerBox.append(feedback('error','服务器存储不足',storageMessage(storage),storage.code || 'GIGA_SERVER_STORAGE_LOW'));
     if (s.phase === 'idle' && (interrupted || runner.savedQueue().length)) {
       runnerBox.append(h('div', {class: 'lst-banner lst-banner--info'}, h('strong', {}, interrupted ? '上次有一份没做完：' + (interrupted.label || '上架') + '（' + interrupted.codes.length + ' 款）' : '还有保存的待执行分组'),
         h('span', {class: 'muted'}, '已经交给服务器的段会保留，继续时只做剩下的。'),
@@ -343,7 +347,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
           notify({level:'info', title: count ? '已安排 ' + count + ' 款' : '所选分组没有待开始的商品',
             message:'已处理或有原任务的商品保留进度；补资料、重试请打开本组的商品操作。'});
           selectedGroups.clear(); render(true);
-        }, {primary: true, disabled: offline() || !groups.some(g => selectedGroups.has(g.id))}),
+        }, {primary: true, disabled: offline() || store.service?.storage?.blocked || !groups.some(g => selectedGroups.has(g.id))}),
         btn('查看全部商品', () => go({page: 'list', id: list.id}))),
       h('table', {class: 'lst-table'}, h('thead', {}, h('tr', {}, ['选择', '分组', '商品数', '进度', ''].map(t => h('th', {}, t)))),
         h('tbody', {}, groups.map(g => {

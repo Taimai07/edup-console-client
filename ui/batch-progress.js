@@ -1,8 +1,10 @@
 import {el} from './analytics.js';
+import {storageCode} from './storage-state.js';
 const active=new Set(['starting','queued','running']);
 export function issueDetails(item={}){
  const code=item.reason||item.failure?.code||'',details=item.failure?.details||{},attention=item.attention||[],out=[];let matched=false;
  const add=(key,title,why,next,needsInput)=>{matched=true;if(!out.some(x=>x.key===key))out.push({key,title,why,next,needsInput});};
+ if(['GIGA_SERVER_STORAGE_LOW','GIGA_SERVER_STORAGE_UNAVAILABLE'].includes(code))add('storage','服务器存储不足','资源下载或转换已停止，已有资料和进度保留。','释放服务器空间后手动继续原任务；不需要补商品资料。',false);
  if(details.reason==='plan_usage_paused')add('service','模型服务暂停，本步骤未执行',details.upstreamDispatched===false?'调用服务返回暂停状态；回执确认这次请求没有发给上游模型。':'调用服务返回暂停状态，尚未取得可用结果；结果不明时不会自动重复请求。','这是服务侧事项，不需要补商品资料。服务恢复后点击“继续检查本批”。',false);
  const imageCodes=['IMAGE_SOURCE_SIZE'];
  if(imageCodes.includes(code))add('image-transfer','图片处理未完成','供应商原图触发程序的大小或编码保护；这不是平台已禁止上架。','由后台保留原图并生成符合要求的发布副本；无需重新提供编码或已有原图。',false);
@@ -54,6 +56,7 @@ export function itemIssue(item={},mode='ai_workflow'){const problems=issueDetail
 export function describeProgress(job){const items=job.result?.pipeline?.items||[],mode=job.preparationMode||job.result?.preparationMode,ai=mode==='ai_workflow',running=active.has(job.state),issues=items.map(x=>itemIssue(x,mode)),errors=issues.filter(x=>x.level==='error'),ready=issues.filter(x=>x.ready).length,submitted=issues.filter(x=>x.submitted).length;let title,next,owner='',level='info';
  if(job.state==='connection_lost'){title='暂时无法确认服务器进度';next='连接已中断，服务器可能仍在处理。请先恢复连接或刷新历史批次，不要重复提交。';level='error';}
  else if(running){title=job.state==='starting'?'正在发送准备请求':job.state==='queued'?'任务已排队':phaseNames[items.find(x=>phaseNames[x.state])?.state]|| (ai?'AI正在准备上架资料':'正在读取详情、报价和库存');next='程序正在处理，结果会自动更新；暂不能提交。';owner='处理中';}
+ else if(storageCode(job)){title='服务器存储不足，资源处理已停止';next='已有资料与进度保留；释放服务器空间后手动继续原任务。';level='error';}
  else if(['failed','interrupted'].includes(job.state)){title='本次处理失败，尚未提交';next='程序执行出现异常，需核对服务器记录；不需要你补商品资料。';level='error';}
  else if(errors.length){title=items.length===1?errors[0].title:errors.length+'款准备失败';next=items.length===1?(errors[0].reason+' '+errors[0].next):'失败原因见下面对应商品的红框。已经通过的商品可以单独核对提交。';owner=errors[0].owner;level='error';}
  else if(submitted){title=submitted+'款已有提交记录'+(ready?'，'+ready+'款可提交':items.length>submitted?'，其余仍有待办':'');next='已提交商品按原回执继续核对；其余商品的真实待办见下方，不重复创建已提交商品。';}
