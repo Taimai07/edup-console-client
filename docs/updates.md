@@ -19,8 +19,10 @@ preservation. An actual second household PC is a separate acceptance surface fro
 two simulated profiles. Server request records can show its version/connectivity,
 but cannot prove its window renders correctly.
 
-The last verified stable client is 0.8.4, installed on both physical PCs with
-signed-patch and hidden renderer acceptance. Candidate0.8.5 adds persistent100-SKU
-groups and revised pacing. Release CI, signed feed and per-PC installation receipts
-must be verified before reporting the candidate as installed. Extension/native0.4.9
-is unchanged; actual reader20/20 acceptance is separate from full background reload.
+The current stable client is0.8.5, release commit4cfec99afd3084cc3b2dc1c677a3d8e533449fcd.
+Windows CI42781395673 passed all gates. Both physical PCs installed the signed patch
+from0.8.4 via bootstrap0.6.4, passed hidden packaged renderer and Windows protection
+checks, and preserved five identity/business files. Main windows remain closed.
+See listing-groups.md for persistent100-SKU archives, queue recovery and30-second CD.
+Extension/native0.4.9 is unchanged; full browser background reload remains separate
+from the previously verified actual reader20/20 return-rate test.
