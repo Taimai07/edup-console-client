@@ -72,3 +72,12 @@ test('select groups 1 and 3, pause, restart, and resume only selected unhandled 
   assert.equal(new Set(admissions).size,105);assert.equal(admissions.length,105);
   assert.equal(fresh.savedQueue().length,0);assert.equal(localStorage.getItem('edup:listing:run:v1'),null);
 });
+
+test('pause during the last transport segment also stops the next selected archive',async()=>{
+  const fresh=(await import('../ui/listing-runner.js?pause-last=1')).runner;currentRunner=fresh;stopOnce=true;
+  const before=reads.length;
+  fresh.start({kind:'prepare',site:'US',codes:['WLAST1'],listId:'last',groupId:'last:1'});
+  fresh.start({kind:'prepare',site:'US',codes:['WLAST2'],listId:'last',groupId:'last:2'});
+  await settle(fresh,'paused');assert.deepEqual(reads.slice(before),['WLAST1']);
+  assert.equal(fresh.savedQueue().length,1);fresh.discardPending();
+});

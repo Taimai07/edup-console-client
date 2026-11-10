@@ -521,6 +521,8 @@ async function pump() {
     if (state.phase === 'done' && state.failedCodes?.length)
       write(KEY.run, {...state.task, codes: state.failedCodes, label: (state.label || '上架') + ' · 没做成的', fresh: true, at: Date.now()});
     else if (state.phase === 'done' || (state.phase === 'paused' && !state.left?.length)) try { localStorage.removeItem(KEY.run); } catch { /* ignore */ }
+    if (stopRequested && queue.length && state.phase === 'done')
+      emit({phase:'paused',need:null,left:[],message:'当前组已交给服务器；后续选中的组已暂停并保存。'});
     if (state.phase === 'paused' || state.phase === 'error') break;
   }
   emit({});
