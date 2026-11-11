@@ -355,7 +355,7 @@ async function waitJob(id, update) {
     const blocked = storageCode(job);
     if (blocked) throw Error(blocked);
     if (!job || !['queued', 'running'].includes(job.state)) return job;
-    update('服务器正在准备上一段，浏览器这边已经可以接着做');
+    update('服务器还在处理上一段（一次一段，防止服务器过载），这一段筛完后再上传');
     await wait(5000);
   }
 }
@@ -366,7 +366,7 @@ async function run(task) {
   const codes = [...new Set(task.codes.map(c => c.toUpperCase()))];
   const journalCodes = task.journalCodes || codes;
   const wanted = new Set(codes);
-  const label = task.label || (kind === 'query' ? '查报价' : parentJobId ? '重新检查' : '准备上架');
+  const label = task.label || (kind === 'query' ? '查报价' : parentJobId ? '重新检查' : '筛选并上传');
   emit({phase: 'running', task: {...task, codes, journalCodes}, label, need: null, message: '正在核对已有进度', error: null, done: 0,
     total: codes.length, segment: 0, segments: 0, excluded: 0, reconcileId: null, failed: 0, failedCodes: [], recovered: 0,
     stopping: false, left: [], unknown: false});
@@ -502,7 +502,7 @@ async function run(task) {
   const failedCodes = [...new Set(failed.flatMap(f => f.codes))];
   const unknown = failed.some(f => f.unknown);
   emit({phase: 'done', failedCodes, unknown,
-    message: !failedCodes.length ? '已全部交给服务器，可以关掉软件，结果会出现在清单里。'
+    message: !failedCodes.length ? '合格的 SKU 已全部上传到服务器，可以关掉软件；后续由服务器后台处理。'
       : '其余已交给服务器；' + failedCodes.length + ' 款没做成（' + [...new Set(failed.map(f => f.code))].join('、') + '）。' +
         (unknown ? '其中有的可能服务器已经收到，重试时会用原编号核对，不会重复。' : '可以点「重试没做成的」。')});
 }
