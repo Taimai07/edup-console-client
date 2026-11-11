@@ -42,3 +42,10 @@ test('runner problems reach the diagnostics upload through an allow-listed event
   assert.match(main, /if\(action==='listing-event'\)\{const code=typeof arg\?\.code==='string'&&\/\^\[A-Z\]\[A-Z0-9_\]\{2,79\}\$\/\.test\(arg\.code\)/);
   assert.match(main, /logger\.write\('listing_runner_problem',\{level:'error'/);
 });
+
+test('0.8.7: a segment the server holds for the operator counts as uploaded and is never resent', () => {
+  assert.match(runner, /if \(\['completed', 'held'\]\.includes\(prior\.state\)\)/);
+  assert.match(runner, /\['queued', 'running', 'completed', 'held'\]\.includes\(job\.state\)/);
+  assert.match(runner, /if \(done && !\['completed', 'held'\]\.includes\(done\.state\)\) note\(/);
+  assert.match(app, /if \(c\.jobId\) return 'uploaded';/);
+});

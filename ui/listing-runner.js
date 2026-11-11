@@ -375,7 +375,8 @@ async function run(task) {
   const processed = new Set(), reserved = new Set(), earlier = [], pendingSegments = [];
   for (const [key, prior] of journal.entries()) {
     if (!prior.codes.some(code => wanted.has(code))) continue;
-    if (prior.state === 'completed') { prior.codes.forEach(c => processed.add(c)); continue; }
+    // 'held' (0.8.7): the server keeps the SKUs for the operator; they are uploaded, never sent again.
+    if (['completed', 'held'].includes(prior.state)) { prior.codes.forEach(c => processed.add(c)); continue; }
     if (!['admitting', 'queued', 'running'].includes(prior.state)) continue;
     let job;
     try { job = await readJob(prior.jobId || prior.requestId); }
@@ -397,7 +398,7 @@ async function run(task) {
       continue;
     }
     journal.seen(key, job);
-    if (['queued', 'running', 'completed'].includes(job.state)) { prior.codes.forEach(c => processed.add(c)); if (job.state !== 'completed') earlier.push({job, key}); }
+    if (['queued', 'running', 'completed', 'held'].includes(job.state)) { prior.codes.forEach(c => processed.add(c)); if (['queued', 'running'].includes(job.state)) earlier.push({job, key}); }
   }
   const recovered = codes.filter(code => processed.has(code)).length;
   emit({done: recovered, recovered});
@@ -421,7 +422,7 @@ async function run(task) {
     for (const item of [inflight, ...earlier.splice(0)].filter(Boolean)) {
       const done = await waitJob(item.job.id, update);
       if (done) journal.seen(item.key, done);
-      if (done && done.state !== 'completed') note({code: done.result?.code || 'GIGA_SEGMENT_FAILED', step: 'preparation'});
+      if (done && !['completed', 'held'].includes(done.state)) note({code: done.result?.code || 'GIGA_SEGMENT_FAILED', step: 'preparation'});
     }
     inflight = null;
   };
