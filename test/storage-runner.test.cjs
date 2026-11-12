@@ -19,6 +19,8 @@ test('persisted screened SKU segments are never resent after a backend storage f
  const {runner}=await import('../ui/listing-runner.js?storage-resume');runner.start({kind:'prepare',site:'US',codes});await settle(runner,'done');
  assert.equal(admissions.length,0);
  assert.equal(runner.state.recovered,2);
+ runner.start({kind:'prepare',site:'US',codes});await settle(runner,'done');
+ assert.equal(admissions.length,0,'reopening after a backend failure must still reuse the saved admission');
 });
 test('client uploads every screened segment without waiting for server downloads',async()=>{
  mode='blocked';admissions.length=0;

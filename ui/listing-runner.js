@@ -376,7 +376,8 @@ async function run(task) {
     if (!prior.codes.some(code => wanted.has(code))) continue;
     // 'held' (0.8.7): the server keeps the SKUs for the operator; they are uploaded, never sent again.
     if (['completed', 'held'].includes(prior.state)) { prior.codes.forEach(c => processed.add(c)); continue; }
-    if (!['admitting', 'queued', 'running'].includes(prior.state)) continue;
+    if (!['admitting', 'queued', 'running'].includes(prior.state) &&
+        !(op === 'giga_prepare' && ['failed', 'interrupted'].includes(prior.state))) continue;
     let job;
     try { job = await readJob(prior.jobId || prior.requestId); }
     catch (error) { throw Object.assign(error, {admitUnknown: true, requestId: prior.requestId}); }
