@@ -61,10 +61,10 @@ app.whenReady().then(async()=>{
  if(result.phase!=='done'||result.queue||JSON.stringify(result.codes)!==JSON.stringify(expected))throw Error('SELECTION_EXECUTION_MISMATCH');
  await run(`fixtureStorage={blocked:true,code:'GIGA_SERVER_STORAGE_LOW',freeBytes:1073741824,freePercent:1.5};view.store.refreshService()`);
  await new Promise(r=>setTimeout(r,120));
- if(!await run(`document.body.textContent.includes('服务器存储不足')&&document.body.textContent.includes('1.00 GiB')`))throw Error('STORAGE_BANNER_MISSING');
+  if(await run(`document.body.textContent.includes('服务器存储不足')`))throw Error('STORAGE_BANNER_SHOULD_NOT_BLOCK_UPLOAD');
  await run(`document.querySelector('input[aria-label="选择第 1 组"]').click()`);
- if(!await run(`[...document.querySelectorAll('button')].find(b=>b.textContent==='执行选中的 1 组').disabled`))throw Error('STORAGE_DISPATCH_NOT_BLOCKED');
- receipt.storageBanner=true;receipt.storageBlocksGroups=true;
+  if(await run(`[...document.querySelectorAll('button')].find(b=>b.textContent==='执行选中的 1 组').disabled`))throw Error('STORAGE_SHOULD_NOT_BLOCK_UPLOAD');
+  receipt.storageBanner=false;receipt.storageBlocksGroups=false;
  receipt.passed=true;receipt.groups=[100,100,5];receipt.executedGroups=[1,3];receipt.executed=105;receipt.filteredRows=100;
  clearTimeout(timeout);save();win.destroy();app.exit(0);
 }).catch(error=>{receipt.error=error.message;clearTimeout(timeout);save();app.exit(1)});

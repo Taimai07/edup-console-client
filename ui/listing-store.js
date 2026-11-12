@@ -91,7 +91,6 @@ export function createStore({call, getSnapshot, isOffline}) {
   async function refreshService() {
     try {
       service = await call('service_status');
-      runner.setStorage(service.storage);
       const next = service.listingSites || {sites: []};
       if (JSON.stringify(next) !== JSON.stringify(sites)) {
         sites = next;

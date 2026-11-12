@@ -12,7 +12,6 @@ import {backupSkuList, skuListPanel} from './giga-lists.js';
 import {extractCodes} from './sku-rules.js';
 import {notify} from './notices.js';
 import {archiveGroups, groupTask, restoredArchive} from './listing-groups.js';
-import {storageMessage} from './storage-state.js';
 
 const PAGES = [['lists', '清单'], ['new', '新建清单'], ['uploaded', '已上传合格']];
 // The only things the operator needs to know about one SKU in semi-automatic mode.
@@ -66,7 +65,6 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
   // ---------- actions ----------
   // Screening again is the only thing left to do from here; it never targets an uploaded SKU.
   function rescreen(cards) {
-    if (store.service?.storage?.blocked) throw Error(store.service.storage.code || 'GIGA_SERVER_STORAGE_LOW');
     const byList = new Map();
     for (const c of cards.filter(x => ['wait', 'retry'].includes(semiStatus(x))))
       byList.set(c.listId, [...(byList.get(c.listId) || []), c.sku]);
@@ -122,8 +120,6 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
   function renderRunner() {
     const s = runner.state, interrupted = runner.interrupted();
     runnerBox.replaceChildren();
-    const storage = store.service?.storage;
-    if (storage?.blocked) runnerBox.append(feedback('error','服务器存储不足',storageMessage(storage),storage.code || 'GIGA_SERVER_STORAGE_LOW'));
     if (s.phase === 'idle' && (interrupted || runner.savedQueue().length)) {
       runnerBox.append(h('div', {class: 'lst-banner lst-banner--info'}, h('strong', {}, interrupted ? '上次有一份没做完：' + (interrupted.label || '筛选') + '（' + interrupted.codes.length + ' 款）' : '还有保存的待执行分组'),
         h('span', {class: 'muted'}, '已经上传到服务器的段会保留，继续时只做剩下的。'),
@@ -270,7 +266,7 @@ export function mountListing(root, {call, getSnapshot, isOffline}) {
           notify({level:'info', title: count ? '已安排 ' + count + ' 款' : '所选分组没有待筛选的商品',
             message: count ? '进度显示在上方。合格的会出现在「已上传合格」。' : '已上传或已排除的商品不会重复筛选。'});
           selectedGroups.clear(); render(true);
-        }, {primary: true, disabled: offline() || store.service?.storage?.blocked || !groups.some(g => selectedGroups.has(g.id))}),
+        }, {primary: true, disabled: offline() || !groups.some(g => selectedGroups.has(g.id))}),
         btn('查看全部商品', () => go({page: 'list', id: list.id}))),
       h('table', {class: 'lst-table'}, h('thead', {}, h('tr', {}, ['选择', '分组', '商品数', '进度', ''].map(t => h('th', {}, t)))),
         h('tbody', {}, groups.map(g => {

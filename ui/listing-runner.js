@@ -85,7 +85,6 @@ let state = {phase: 'idle', queue: 0};
 const listeners = new Set();
 const queue = [];
 let stopRequested = false, resumeSignal = null;
-let storageBlockedCode = null;
 function emit(patch) { state = {...state, ...patch, queue: queue.length}; for (const fn of listeners) fn(state); }
 const persistQueue = () => localStorage.setItem(KEY.queue, JSON.stringify(queue));
 
@@ -389,6 +388,11 @@ async function run(task) {
       for (const code of key.split(',')) reserved.add(code);
       continue;
     }
+    if (op === 'giga_prepare') {
+      journal.seen(key, job);
+      prior.codes.forEach(code => processed.add(code));
+      continue;
+    }
     if (storageCode(job)) {
       // The server returned a definite terminal resource hold, not an unknown admission.
       // Keep successful sibling SKUs, and retry only the unfinished items after manual resume.
@@ -467,14 +471,14 @@ async function run(task) {
           journal.seen(key, job);
           if (listId) local.addJob(listId, job.rootJobId || job.id);
           emit({lastJobId: job.rootJobId || job.id, admission: {requestId, rootJobId: job.rootJobId || job.id}});
-          inflight = {job, key};
+          inflight = op === 'giga_prepare' ? null : {job, key};
           break;
         } catch (error) {
           const found = error.admitUnknown ? await readJob(requestId).catch(() => null) : null;
           if (found) {
             journal.seen(key, found);
             if (listId) local.addJob(listId, found.rootJobId || found.id);
-            inflight = {job: found, key};
+            inflight = op === 'giga_prepare' ? null : {job: found, key};
             break;
           }
           if (error.screenRequired && round < 2) {
@@ -548,7 +552,6 @@ export const runner = {
   // task: {kind:'prepare'|'query'|'recheck', site, codes, parentJobId?, listId?, label?, fresh?}
   // fresh: skip reusing recent screening receipts and read the 大健 page again.
   start(task) {
-    if (storageBlockedCode) throw Error(storageBlockedCode);
     if (!window.edup?.maintenance) throw Error('GIGA_BROWSER_DESKTOP_REQUIRED');
     if (!task.codes?.length) return;
     if (!['running','need','queued'].includes(state.phase) && (queue.length || read(KEY.queue, []).length))
@@ -568,10 +571,6 @@ export const runner = {
   // A run cut short by closing the app (journal keeps finished segments).
   interrupted() { return state.phase === 'idle' ? read(KEY.run, null) : null; },
   savedQueue() { return read(KEY.queue, []); },
-  setStorage(storage) {
-    storageBlockedCode = storage?.blocked ? storage.code || 'GIGA_SERVER_STORAGE_LOW' : null;
-    if (storageBlockedCode && runner.busy()) { stopRequested = true; emit({stopping:true}); }
-  },
   discardPending() {
     if (runner.busy()) throw Error('LISTING_RUN_ACTIVE');
     localStorage.removeItem(KEY.queue);
@@ -580,7 +579,6 @@ export const runner = {
     emit({phase:'idle', message:'', error:null, unknown:false});
   },
   resumeSaved() {
-    if (storageBlockedCode) throw Error(storageBlockedCode);
     if (runner.busy()) return;
     const active = read(KEY.run, null), saved = read(KEY.queue, []);
     const tasks = [active, ...saved].filter(Boolean);

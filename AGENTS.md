@@ -16,6 +16,9 @@ The public client repository must not contain private service configuration or d
 - private-backend/: local private source; excluded from public export.
 
 ## Current state and rules
+0.8.8 submits screened SKU lists and finishes after durable server acknowledgement.
+Download-space protection belongs to the server resource pipeline and does not block
+client intake. Stored segments are never resent because of backend processing errors.
 0.8.5 adds saved100-SKU archive groups and30-second browser CD without client hourly/daily quotas.
 Group selection and restart recovery use existing list and request owners; see docs/listing-groups.md.
 0.8.6 signed patch installation and hidden self-check passed on both physical PCs; five data files preserved.

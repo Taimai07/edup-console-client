@@ -8,12 +8,3 @@ test('nested terminal resource failures are visible without classifying normal j
  assert.match(storageMessage({blocked:true,freeBytes:1073741824,freePercent:1.5}),/服务器存储不足.*1.00 GiB.*1.5%/);
  const {friendlyError}=await import('../ui/notices.js');assert.equal(friendlyError(Error('GIGA_SERVER_STORAGE_LOW')).title,'服务器存储不足');
 });
-test('a low-space status blocks both new groups and saved queue resume without deleting state',async()=>{
- const {runner}=await import('../ui/listing-runner.js');
- data.set('edup:listing:queue:v1',JSON.stringify([{site:'US',codes:['WTEST1'],kind:'prepare'}]));
- runner.setStorage({blocked:true,code:'GIGA_SERVER_STORAGE_LOW'});
- assert.throws(()=>runner.start({kind:'prepare',site:'US',codes:['WTEST2']}),/STORAGE_LOW/);
- assert.throws(()=>runner.resumeSaved(),/STORAGE_LOW/);
- assert.equal(runner.savedQueue().length,1);runner.setStorage({blocked:false});
- assert.equal(runner.state.phase,'idle','free space restoration must not start a job automatically');
-});
