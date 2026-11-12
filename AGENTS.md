@@ -21,13 +21,13 @@ Download-space protection belongs to the server resource pipeline and does not b
 client intake. Stored segments are never resent because of backend processing errors.
 0.8.5 adds saved100-SKU archive groups and30-second browser CD without client hourly/daily quotas.
 Group selection and restart recovery use existing list and request owners; see docs/listing-groups.md.
-0.8.6 signed patch installation and hidden self-check passed on both physical PCs; five data files preserved.
+0.8.8 signed patch installation and hidden self-check passed on both physical PCs; five data files preserved.
 The client uses one desktop asset handler and real renderer readiness.
 Native offline, skipped-version and missing-dependency rollback checks pass.
 Release/install acceptance must be verified separately on each real device.
 Native installation and live-data renderer checks are required for release.
 Direct migrations from prior signed slots are covered by isolated profiles;
-the second physical PC still needs its own post-update confirmation.
+both physical PCs have their own successful post-update receipts.
 Do not interpret an HTML load event or file existence as a working renderer.
 User data, device identity and logs must survive updates and rollback.
 Clients contact the configured private service; no seller/model credentials in UI.
