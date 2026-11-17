@@ -4,7 +4,7 @@ const MiB = 1024 * 1024;
 const materialLimits = {file: 10 * MiB, entry: 4 * MiB, expanded: 12 * MiB, entries: 1000};
 const skuLimits = {file: 128 * MiB, entry: 64 * MiB, expanded: 128 * MiB, entries: 65535, cachedFormulaText: true, legacyExcel: true};
 const decodeXml=s=>s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_,x)=>String.fromCodePoint(x[0].toLowerCase()==='x'?parseInt(x.slice(1),16):Number(x))).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
-const {extractCodes} = require('../ui/sku-rules.js');
+const {extractCodes} = require('../shared/sku-rules.js');
 function zipXml(bytes, limits){
  let e=-1;for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(bytes.readUInt32LE(i)===0x06054b50){e=i;break;}
  if(e<0)throw Error('DOCUMENT_ZIP_INVALID');const count=bytes.readUInt16LE(e+10);let at=bytes.readUInt32LE(e+16),total=0,out={};
@@ -55,7 +55,7 @@ function legacyExcelText(bytes, maxLength) {
   [0x0009, 0x0209, 0x0409, 0x0809].includes(bytes.readUInt16LE(0));
  if (!compoundFile && !biffStream) throw Error('DOCUMENT_XLS_INVALID');
 
- const {read} = require('./sheetjs-0-20-3.cjs');
+ const {read} = require('./vendor/sheetjs.cjs');
  let workbook;
  try {
   workbook = read(bytes, {type: 'buffer', cellFormula: false, cellHTML: false,

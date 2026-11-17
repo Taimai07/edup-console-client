@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
-const {ProtectedState}=require('../desktop/state.cjs'),{downloadFile}=require('../desktop/maintenance.cjs');
+const {ProtectedState}=require('../desktop/state.cjs'),{downloadFile}=require('../desktop/update/maintenance.cjs');
 function codec(){const key=crypto.randomBytes(32);return {isEncryptionAvailable:()=>true,encryptString:s=>{const iv=crypto.randomBytes(12),c=crypto.createCipheriv('aes-256-gcm',key,iv);const b=Buffer.concat([c.update(s,'utf8'),c.final()]);return Buffer.concat([iv,c.getAuthTag(),b]);},decryptString:b=>{const c=crypto.createDecipheriv('aes-256-gcm',key,b.subarray(0,12));c.setAuthTag(b.subarray(12,28));return Buffer.concat([c.update(b.subarray(28)),c.final()]).toString();}};}
 test('protected cache and upgrade backup preserve identity bytes and fail closed on key changes',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'edup-state-'));

@@ -1,10 +1,10 @@
 // The listing workspace shows one stage, one owner and one next action per product.
 // Fixture shapes follow native-continuation.cjs and the live giga_job records.
 const {test} = require('node:test'), assert = require('node:assert/strict');
-const load = () => import('../ui/listing-states.js');
+const load = () => import('../ui/listing/listing-states.js');
 
 test('an admitted recheck refreshes a cached completed batch, even during a read', async () => {
-  const {createStore} = await import('../ui/listing-store.js');
+  const {createStore} = await import('../ui/listing/listing-store.js');
   let calls = 0, finish;
   const store = createStore({isOffline: () => false, getSnapshot: () => ({}),
     call: () => ++calls === 1 ? new Promise(resolve => { finish = resolve; })

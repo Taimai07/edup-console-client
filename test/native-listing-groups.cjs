@@ -36,9 +36,9 @@ app.whenReady().then(async()=>{
    throw Error('UNEXPECTED '+op);
   }};
   localStorage.setItem('edup:listing:pace:v2',JSON.stringify({restMinutes:0,hourly:0,daily:0}));
-  const {local,runner}=await import('edup://console/listing-runner.js');window.testRunner=runner;
+  const {local,runner}=await import('edup://console/listing/listing-runner.js');window.testRunner=runner;
   local.saveList({id:'fixture-list',site:'US',source:'paste',kind:'query',label:'Fixture Archive',codes:fixtureCodes,jobs:[],created:Date.now()/1000});
-  const {mountListing}=await import('edup://console/listing-app.js');
+  const {mountListing}=await import('edup://console/listing/listing-app.js');
   window.view=mountListing(document.querySelector('#view'),{call,getSnapshot:()=>({products:[]}),isOffline:()=>false});
   await view.store.refreshService();await view.store.refreshBrowser();view.show();
  })()`);

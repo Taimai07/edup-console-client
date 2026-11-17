@@ -47,7 +47,7 @@ app.whenReady().then(async()=>{
  await w.loadURL('edup://console/');
  const run=s=>w.webContents.executeJavaScript(s);
  const wait=async s=>{for(let i=0;i<100;i++){if(await run(s))return;await new Promise(r=>setTimeout(r,100));}throw Error('UI_WAIT:'+s);};
- await run("import('edup://console/operations.js').then(m=>m.gigaQueries(document.querySelector('#view'),new Set(),{site:'US',siteAvailable:true}))");
+ await run("import('edup://console/operations/operations.js').then(m=>m.gigaQueries(document.querySelector('#view'),new Set(),{site:'US',siteAvailable:true}))");
  await wait("document.querySelectorAll('.listing-action-row').length===3");
  const before=await run("(()=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent==='继续检查本批（复用已有结果）');return {resumeEnabled:!!b&&!b.disabled,country:document.body.textContent.includes('制造国家尚未核实'),paused:document.body.textContent.includes('模型服务暂停'),noInvent:document.body.textContent.includes('不需要你编造面料'),submittedResume:[...document.querySelectorAll('.listing-action-row')][2].textContent.includes('继续检查此商品')};})()");
  if(!before.resumeEnabled||!before.country||!before.paused||!before.noInvent||before.submittedResume)throw Error('WRONG_RENDERED_ACTIONS');

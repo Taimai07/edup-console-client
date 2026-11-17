@@ -1,10 +1,10 @@
 import {renderWorkspace} from './workspace-v2.js';
-import {productEditor,businessCall} from './operations.js';
-import {mountListing} from './listing-app.js';
-import {renderMaintenance} from './maintenance.js';
-import {mountAI} from './ai-host.js';
-import {syncStatus,notify,message as feedback,friendlyError} from './notices.js';
-import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './analytics.js';
+import {productEditor,businessCall} from './operations/operations.js';
+import {mountListing} from './listing/listing-app.js';
+import {renderMaintenance} from './settings/maintenance.js';
+import {mountAI} from './ai/ai-host.js';
+import {syncStatus,notify,message as feedback,friendlyError} from './common/notices.js';
+import {el,card,number,table,names,siteNames,today,totals,moneyText,usdText,fxNote,salesSeries,profitSeries,chart,strategies} from './operations/analytics.js';
 const tabs=['经营总览','商品管理','经营报表','上架','广告分析','运营 AI','同步与维护'];
 let disposeAI=null, listing=null;
 let data=null,current=0,site='ALL',offline=false,cacheWarning='',loadError=null,detail=null,span='30',from='',to='',report='sales';

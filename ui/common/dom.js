@@ -1,0 +1,26 @@
+// Small tools for drawing the interface: element, card, number text, table and the line chart.
+// Split out of analytics.js unchanged (client round 3); operations/analytics.js still exports every name.
+export const el=(t,text,cls)=>{const x=document.createElement(t);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
+export const card=(title,text)=>{const x=el('article',undefined,'card');x.append(el('h2',title));if(text)x.append(el('p',text,'muted'));return x;};
+export const number=x=>x===null||x===undefined||x===''?'—':Number.isFinite(Number(x))?Number(x).toLocaleString('zh-CN',{maximumFractionDigits:2}):'—';
+export function axisScale(values,target=8){const lo=Math.min(0,...values),hi=Math.max(0,...values),range=hi-lo||1,rough=range/target,pow=10**Math.floor(Math.log10(rough)),n=rough/pow,step=([1,2,2.5,5,10].find(x=>x>=n)||10)*pow,min=Math.floor(lo/step)*step,max=Math.ceil((hi||1)/step)*step;return {min,max,step};}
+export function chart(title,rows,{unit='',note='',start='',end=''}={}){
+ const box=card(title,note);box.classList.add('chart-card');const data=rows.filter(r=>(!start||r.date.slice(0,10)>=start)&&(!end||r.date.slice(0,10)<=end));const values=data.filter(r=>Number.isFinite(r.value));
+ if(!values.length){box.append(el('p','当前范围没有可用数据，未按0补齐。','empty'));return box;}
+ const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),W=1200,H=480,L=100,R=35,T=45,B=85,PW=W-L-R,PH=H-T-B;
+ svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('role','img');svg.setAttribute('aria-label',title+'；左右方向键查看数据');svg.setAttribute('tabindex','0');svg.classList.add('trend');
+ const draw=(tag,attrs,text)=>{const n=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;svg.append(n);return n;};
+ const scale=axisScale(values.map(r=>r.value)),y=v=>T+(scale.max-v)/(scale.max-scale.min)*PH;
+ const times=data.map(r=>Date.parse(r.date.includes('T')?r.date:r.date+'T00:00:00+08:00')),first=times[0],last=times.at(-1),x=i=>last===first?L+PW/2:L+(times[i]-first)/(last-first)*PW;
+ for(let v=scale.min;v<=scale.max+scale.step/100;v+=scale.step){const yy=y(v);draw('path',{d:`M${L} ${yy}H${W-R}`,stroke:Math.abs(v)<scale.step/100?'#9dabae':'#e1e9e9','stroke-dasharray':Math.abs(v)<scale.step/100?'0':'3 4'});draw('text',{x:L-15,y:yy+5,'text-anchor':'end','class':'y-tick'},Number(v.toFixed(8)).toLocaleString('zh-CN',{maximumFractionDigits:4}));}
+ draw('path',{d:`M${L} ${T}V${H-B}H${W-R}`,stroke:'#95a9af',fill:'none'});draw('text',{x:L,y:22,'class':'axis-title'},unit||'数值');draw('text',{x:W-R,y:H-13,'text-anchor':'end','class':'axis-title'},data[0].date.includes('T')?'时间（北京时间）':'日期');
+ const indices=new Set([0,data.length-1]);const stride=Math.max(1,Math.ceil((data.length-1)/8));for(let i=stride;i<data.length-1;i+=stride)if(data.length-1-i>=stride*.55)indices.add(i);
+ for(const i of [...indices].sort((a,b)=>a-b)){const xx=x(i),hour=data[i].date.includes('T'),label=hour?data[i].date.slice(11,16):data[i].date.slice(5,10);draw('path',{d:`M${xx} ${T}V${H-B+7}`,stroke:'#e9eeee'});draw('text',{x:xx,y:H-B+30,'text-anchor':i===0?'start':i===data.length-1?'end':'middle','class':'x-tick'},label);if(i===0)draw('text',{x:xx,y:H-B+52,'text-anchor':'start','class':'date-caption'},data[i].date.slice(0,10));}
+ let path='',connected=false;for(let i=0;i<data.length;i++){if(!Number.isFinite(data[i].value)){connected=false;continue;}path+=(connected?' L':' M')+x(i)+' '+y(data[i].value);connected=true;}
+ draw('path',{d:path,stroke:'#248671','stroke-width':3,fill:'none','stroke-linejoin':'round'});for(let i=0;i<data.length;i++)if(Number.isFinite(data[i].value))draw('circle',{cx:x(i),cy:y(data[i].value),r:3.5,fill:'#248671'});
+ const cursor=draw('path',{d:'',stroke:'#527777','stroke-dasharray':'5 4','pointer-events':'none'}),dot=draw('circle',{r:6,fill:'#102b36','pointer-events':'none',visibility:'hidden'}),readout=el('div','移动鼠标或使用左右方向键查看时间与数值','chart-readout');let active=0;
+ const show=i=>{active=i;const r=data[i];cursor.setAttribute('d',`M${x(i)} ${T}V${H-B}`);dot.setAttribute('visibility',Number.isFinite(r.value)?'visible':'hidden');dot.setAttribute('cx',x(i));dot.setAttribute('cy',Number.isFinite(r.value)?y(r.value):T);readout.textContent=r.date.replace('T',' ').replace(/(?:\.\d+)?\+08:00$/,'')+' · '+number(r.value)+' '+unit;};
+ svg.onpointermove=e=>{const rect=svg.getBoundingClientRect(),at=(e.clientX-rect.left)/rect.width*W;let i=0;for(let j=1;j<data.length;j++)if(Math.abs(x(j)-at)<Math.abs(x(i)-at))i=j;show(i);};svg.onkeydown=e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();show(Math.max(0,Math.min(data.length-1,active+(e.key==='ArrowRight'?1:-1))));}};
+ const scroll=el('div',undefined,'chart-scroll');scroll.append(svg);box.append(scroll,readout);if(data.length!==values.length)box.append(el('p','部分时间点缺数据或缺汇率，已留空。','muted'));return box;
+}
+export function table(headers,rows){const wrap=el('div',undefined,'scroll'),t=el('table'),h=el('tr');headers.forEach(s=>h.append(el('th',s)));t.append(h);for(const row of rows){const tr=el('tr');row.forEach(s=>tr.append(el('td',s===null||s===undefined?'—':String(s))));t.append(tr);}wrap.append(t);return wrap;}

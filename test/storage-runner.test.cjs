@@ -14,9 +14,9 @@ global.window={edup:{maintenance:async(op,args)=>{
 }}};
 async function settle(runner,phase){for(let i=0;i<500;i++){if(runner.state.phase===phase)return;await new Promise(r=>setTimeout(r,2));}throw Error('STUCK '+JSON.stringify(runner.state));}
 test('persisted screened SKU segments are never resent after a backend storage failure',async()=>{
- const {openSegmentJournal}=await import('../ui/giga-segment-journal.js');const codes=['WGOOD1','WBLOCK1'];
+ const {openSegmentJournal}=await import('../ui/giga/giga-segment-journal.js');const codes=['WGOOD1','WBLOCK1'];
  const journal=await openSegmentJournal(localStorage,{site:'US',operation:'giga_prepare',parent:null,codes});oldId=journal.reserve(codes.join(','),codes);journal.seen(codes.join(','),{id:oldId,state:'queued'});
- const {runner}=await import('../ui/listing-runner.js?storage-resume');runner.start({kind:'prepare',site:'US',codes});await settle(runner,'done');
+ const {runner}=await import('../ui/listing/listing-runner.js?storage-resume');runner.start({kind:'prepare',site:'US',codes});await settle(runner,'done');
  assert.equal(admissions.length,0);
  assert.equal(runner.state.recovered,2);
  runner.start({kind:'prepare',site:'US',codes});await settle(runner,'done');
@@ -24,7 +24,7 @@ test('persisted screened SKU segments are never resent after a backend storage f
 });
 test('client uploads every screened segment without waiting for server downloads',async()=>{
  mode='blocked';admissions.length=0;
- const {runner}=await import('../ui/listing-runner.js?storage-stop');const codes=Array.from({length:45},(_,i)=>'WSTORAGE'+i);
+ const {runner}=await import('../ui/listing/listing-runner.js?storage-stop');const codes=Array.from({length:45},(_,i)=>'WSTORAGE'+i);
  runner.start({kind:'prepare',site:'US',codes,listId:'one',groupId:'one'});
  runner.start({kind:'prepare',site:'US',codes:['WLATER1'],listId:'two',groupId:'two'});
  await settle(runner,'done');await new Promise(r=>setTimeout(r,20));

@@ -62,7 +62,7 @@ async function done(runner) {
 }
 
 test('subset retry preserves a prior segment request across uncertain readback', async()=>{
-  const {runner}=await import('../ui/listing-runner.js');
+  const {runner}=await import('../ui/listing/listing-runner.js');
   const original={kind:'prepare',site:'US',codes,listId:null};
   runner.start(original);
   const firstRun=await done(runner);

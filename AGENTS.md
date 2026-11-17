@@ -1,7 +1,9 @@
 # EDUPLINK architecture entry
 
-Maintainer: Codex, primary project maintainer.
-Claude and other collaborators propose annotated changes; maintainer merges them.
+Maintainer: Claude (EDUPLINK client group; transferred from Codex on 2026-11-15).
+Changes go through the group lead; see ../docs/sop.md and ../docs/groups/客户端.md.
+Scope decided by the user 2026-11-11: the client is semi-automatic - SKU input, return-rate
+screening, upload of qualified SKUs to the server. No post-listing features are added to it.
 Unresolved review comments: the independent review findings for saved-batch recovery have been addressed with targeted regression checks.
 
 ## Purpose and structure
@@ -13,7 +15,7 @@ The public client repository must not contain private service configuration or d
 - ui/: shared views; loaded through the desktop edup protocol or development HTTP.
 - shared/: contracts and validation shared by the host and tests.
 - scripts/ and test/: release packaging, signature and upgrade acceptance.
-- private-backend/: local private source; excluded from public export.
+- extension/giga-browser-bridge/: Chrome extension 0.5.0 source copy (the client still reads the registry-pointed folder).
 
 ## Current state and rules
 0.8.8 submits screened SKU lists and finishes after durable server acknowledgement.
@@ -45,6 +47,5 @@ Silent target-app upgrades are authorized; no mouse/keyboard/screenshots/focus c
 - docs/giga-browser.md: region-account check and favorites before new product intake.
 - docs/client.md: renderer loading, IPC, health and submission availability.
 - docs/updates.md: signed full application patches, skipped versions and recovery.
-- docs/private-services.md: private deployment boundaries and acceptance sources.
 - docs/batch-submission.md: fixed batch selection, asynchronous submission and per-item results.
 Update current intent/state in these documents after changes; do not append a diary.

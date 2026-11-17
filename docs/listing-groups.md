@@ -1,6 +1,6 @@
 # Saved SKU groups and execution pacing
 
-Maintainer: Codex. Owner: A5.1 listing workspace and its local list/runner store.
+Maintainer: Claude (client group). Owner: A5.1 listing workspace and its local list/runner store.
 Uses existing D2 sku_list_save/status/index contracts; no new API or database table.
 
 Imports are saved before any execution. Each list retains immutable original membership,

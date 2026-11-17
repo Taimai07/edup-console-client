@@ -1,0 +1,178 @@
+{
+ "steps": 24,
+ "errs": [
+  "bulk submit not admitted: NO_BUTTON 一键提交这 2 款商品"
+ ],
+ "consoleErrors": [],
+ "calls": 49,
+ "trace": [
+  [
+   "mount",
+   5346,
+   "89341caf261a256c",
+   "d774fba1813d23cb",
+   "service_status,batch_chat_list,giga_job,proposal_prepare,batch_chat_read,giga_job"
+  ],
+  [
+   "poll timer",
+   5346,
+   "89341caf261a256c",
+   "6ed5ec62d1655ea3",
+   "giga_job"
+  ],
+  [
+   "refresh button",
+   5346,
+   "89341caf261a256c",
+   "6ed5ec62d1655ea3",
+   "giga_job"
+  ],
+  [
+   "bulk submit",
+   4994,
+   "a5f33d7d0f232476",
+   "db37559c68d4bc9e",
+   "proposal_decide,giga_job"
+  ],
+  [
+   "submit A1 prepare",
+   5108,
+   "9c6c06c2e7d0997d",
+   "32ec4b51096a08b9",
+   "proposal_prepare,giga_job"
+  ],
+  [
+   "readback",
+   5108,
+   "9c6c06c2e7d0997d",
+   "d46d0b416f009a4a",
+   "operation_readback,giga_job"
+  ],
+  [
+   "continue one",
+   5146,
+   "b51e5e324c64223a",
+   "f926053cfc76f8ed",
+   "M:giga-browser-reuse,M:giga-browser-status,batch_chat_read,giga_job"
+  ],
+  [
+   "supplement",
+   5146,
+   "b51e5e324c64223a",
+   "61a45807e9a55311",
+   "batch_material_list"
+  ],
+  [
+   "explain",
+   5146,
+   "b51e5e324c64223a",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "open buyer page",
+   5146,
+   "b51e5e324c64223a",
+   "839a6d1a4dec833d",
+   "M:giga-open-buyer-page"
+  ],
+  [
+   "history change",
+   5346,
+   "89341caf261a256c",
+   "e6eeffe88a135b77",
+   "giga_job,proposal_prepare,batch_chat_read,giga_job"
+  ],
+  [
+   "query",
+   3247,
+   "e9f14a901fd2dfac",
+   "18c1fdea953db4cd",
+   "M:giga-browser-status,M:giga-browser-folder,M:giga-browser-start,M:giga-browser-task,giga_query,giga_job"
+  ],
+  [
+   "prepare",
+   3477,
+   "3671d5aab74acf00",
+   "09ecf34515076d3a",
+   "M:giga-browser-reuse,M:giga-browser-status,batch_chat_read,giga_job"
+  ],
+  [
+   "resume",
+   3477,
+   "3671d5aab74acf00",
+   "09ecf34515076d3a",
+   "M:giga-browser-reuse,M:giga-browser-status,batch_chat_read,giga_job"
+  ],
+  [
+   "query with reconcile hold",
+   3127,
+   "ac7a1156505cd4df",
+   "03f3c44eb12b5d1e",
+   "giga_job,batch_chat_read,giga_job"
+  ],
+  [
+   "retry reconcile",
+   3127,
+   "ac7a1156505cd4df",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "bulk submit not admitted",
+   3127,
+   "ac7a1156505cd4df",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "refresh while offline",
+   3186,
+   "a19131940eac7e65",
+   "f6f853613b768cfd",
+   "giga_job"
+  ],
+  [
+   "poll while offline",
+   3186,
+   "a19131940eac7e65",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "refresh recovered",
+   3247,
+   "e9f14a901fd2dfac",
+   "f6f853613b768cfd",
+   "giga_job"
+  ],
+  [
+   "mount offline",
+   2695,
+   "c86af118b5f51214",
+   "93582a6b310e010d",
+   "batch_chat_list,giga_job"
+  ],
+  [
+   "mount site unavailable",
+   2611,
+   "697c9b41d3e9b8c6",
+   "93582a6b310e010d",
+   "batch_chat_list,giga_job"
+  ],
+  [
+   "mount read on mount",
+   1267,
+   "006c1bed783e6816",
+   "e174d33b7de544d4",
+   "service_status,batch_chat_list"
+  ],
+  [
+   "read on mount settled",
+   1267,
+   "006c1bed783e6816",
+   "4f53cda18c2baa0c",
+   ""
+  ]
+ ]
+}

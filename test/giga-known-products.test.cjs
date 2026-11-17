@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
-const {GigaBrowser} = require('../desktop/giga-browser.cjs');
+const {GigaBrowser} = require('../desktop/giga-browser/giga-browser.cjs');
 
 function bridge({knownProducts = true} = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'edup-known-'));

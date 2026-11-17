@@ -1,6 +1,6 @@
 # Client loading and startup
 
-Maintainer: Codex. No unresolved collaborator comments.
+Maintainer: Claude (client group). No unresolved collaborator comments.
 
 The UI is shared, but production uses edup://console through Electron's protocol
 handler. HTTP-browser testing alone cannot establish desktop loadability.

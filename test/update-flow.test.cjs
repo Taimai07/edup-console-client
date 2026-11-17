@@ -1,4 +1,4 @@
-const {test}=require('node:test'),assert=require('node:assert/strict'),{runUpdate}=require('../desktop/update-flow.cjs'),{template}=require('../desktop/menu.cjs');
+const {test}=require('node:test'),assert=require('node:assert/strict'),{runUpdate}=require('../desktop/update/update-flow.cjs'),{template}=require('../desktop/menu.cjs');
 test('single update action confirms before download and never installs after cancel or failure',async()=>{
  const calls=[],args={check:async()=>({state:'available',version:'9.0.0'}),confirm:async()=>false,download:async()=>calls.push('download'),install:async()=>{calls.push('install');return {state:'installing'};}};
  assert.equal((await runUpdate(args)).state,'cancelled');assert.deepEqual(calls,[]);

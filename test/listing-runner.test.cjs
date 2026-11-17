@@ -7,9 +7,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const runner = fs.readFileSync(path.join(__dirname, '..', 'ui', 'listing-runner.js'), 'utf8');
-const app = fs.readFileSync(path.join(__dirname, '..', 'ui', 'listing-app.js'), 'utf8');
-const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main.cjs'), 'utf8');
+// listing-runner.js was split (client round 1); the checks below read the runner and its split-out parts together.
+const runner = ['listing/listing-runner.js', 'listing/listing-runner-state.js', 'listing/listing-runner-screen.js', 'listing/listing-runner-admit.js', 'listing/listing-runner-run.js', 'listing/listing-runner-io.js', 'listing/listing-local.js', 'listing/listing-pace.js'].map(name => fs.readFileSync(path.join(__dirname, '..', 'ui', name), 'utf8')).join(String.fromCharCode(10)).replace(/\brs\./g, ''); // the split files keep the shared state in `rs`; read it as the old closure variables
+// listing-app.js was split (client rounds 1 and 3); read the app and its split-out files together.
+const app = ['listing/listing-app.js', 'listing/listing-app-bar.js', 'listing/listing-app-pages.js', 'listing/listing-app-wizard.js', 'listing/listing-status.js'].map(name => fs.readFileSync(path.join(__dirname, '..', 'ui', name), 'utf8')).join(String.fromCharCode(10));
+// main.cjs was split (client round 2); the listing-event action now lives in main-ipc.cjs.
+const main = fs.readFileSync(path.join(__dirname, '..', 'desktop', 'main-ipc.cjs'), 'utf8');
 
 test('browser steps retry by themselves and wait for the page instead of stopping', () => {
   assert.match(runner, /const BROWSER_WAITS = \[60e3, 3 \* 60e3, 10 \* 60e3\]/);

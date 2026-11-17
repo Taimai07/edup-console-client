@@ -1,0 +1,362 @@
+{
+ "steps": 50,
+ "errs": [
+  "banner dismiss: NO_BUTTON 知道了",
+  "open help for wizard: NO_BUTTON 打开连接说明",
+  "phase idle"
+ ],
+ "consoleErrors": [],
+ "calls": 20,
+ "trace": [
+  [
+   "before show",
+   126,
+   "598e3632350a2cf4",
+   "a2c858d8526c62b3",
+   "service_status,M:giga-browser-status"
+  ],
+  [
+   "show",
+   1285,
+   "24e03ce7bd636acc",
+   "dc726d32d9bc6cf0",
+   "M:giga-browser-status,service_status"
+  ],
+  [
+   "timer tick",
+   1285,
+   "24e03ce7bd636acc",
+   "aa49e98ceb8a35f5",
+   "M:giga-browser-status"
+  ],
+  [
+   "nav uploaded",
+   895,
+   "733b162f0929f7e6",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "nav lists",
+   1285,
+   "24e03ce7bd636acc",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "pill open",
+   2033,
+   "d2cbd1b5092d5cc0",
+   "71a6bb8679ee6ce2",
+   "M:giga-browser-folder"
+  ],
+  [
+   "help recheck",
+   2033,
+   "d2cbd1b5092d5cc0",
+   "54d9fccc282b045d",
+   "M:giga-browser-status,M:giga-browser-folder"
+  ],
+  [
+   "help copy",
+   2033,
+   "d2cbd1b5092d5cc0",
+   "70bbdb47355a5a81",
+   "M:giga-browser-copy-folder"
+  ],
+  [
+   "pill close",
+   1285,
+   "24e03ce7bd636acc",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "open seed list",
+   3707,
+   "fb0835b6561b9198",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "filter retry",
+   2179,
+   "fafbd5a03a73fc3b",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "filter all",
+   3707,
+   "fb0835b6561b9198",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "search",
+   3707,
+   "fb0835b6561b9198",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "search clear",
+   3707,
+   "fb0835b6561b9198",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "select one",
+   3863,
+   "f3e424e9f6ee6b56",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "select two",
+   3863,
+   "22892e63e8652c95",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "bulk skip",
+   3724,
+   "4ea6776d754f158d",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "restore",
+   3717,
+   "945a903d0a7d6b64",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "select all groups",
+   3705,
+   "a7474169f65f326f",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "clear groups",
+   3717,
+   "945a903d0a7d6b64",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "group check",
+   3705,
+   "a7474169f65f326f",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "run groups",
+   3705,
+   "a7474169f65f326f",
+   "a21b8568b16be3f9",
+   "sku_list_status"
+  ],
+  [
+   "banner dismiss",
+   3705,
+   "a7474169f65f326f",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "view group",
+   3722,
+   "ae5390ad6371ec3e",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "back to lists",
+   1285,
+   "fc9577312c8e6db8",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "nav new",
+   1210,
+   "9b6a00b7cb00071c",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard tab store",
+   1251,
+   "6fea39ca1e036160",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard tab file",
+   1143,
+   "eb00ee98478b55be",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard tab paste",
+   1210,
+   "9b6a00b7cb00071c",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard paste",
+   1210,
+   "9b6a00b7cb00071c",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard extract",
+   1598,
+   "d08685dd3907889b",
+   "90157f20b9736c40",
+   "M:extract-codes"
+  ],
+  [
+   "wizard label",
+   1598,
+   "d08685dd3907889b",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard next",
+   1343,
+   "52287d90e003cf3f",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard recheck",
+   1343,
+   "52287d90e003cf3f",
+   "dc726d32d9bc6cf0",
+   "M:giga-browser-status,service_status"
+  ],
+  [
+   "wizard back",
+   1595,
+   "5d1fc2f6c6e22a45",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard next again",
+   1343,
+   "52287d90e003cf3f",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard next 3",
+   1017,
+   "95bf92666ba59b8d",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "wizard save",
+   2901,
+   "c8cddcb6a0e72202",
+   "e1038fef565ccffa",
+   "sku_list_save"
+  ],
+  [
+   "backup button",
+   2901,
+   "c8cddcb6a0e72202",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "go offline",
+   2900,
+   "b3009c16fd793268",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "timer tick offline",
+   2900,
+   "b3009c16fd793268",
+   "aa49e98ceb8a35f5",
+   "M:giga-browser-status"
+  ],
+  [
+   "browser down",
+   2888,
+   "d9d84e258532c519",
+   "aa49e98ceb8a35f5",
+   "M:giga-browser-status"
+  ],
+  [
+   "open help for wizard",
+   2888,
+   "d9d84e258532c519",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "recover",
+   2901,
+   "c8cddcb6a0e72202",
+   "aa49e98ceb8a35f5",
+   "M:giga-browser-status"
+  ],
+  [
+   "nav lists again",
+   1451,
+   "a658319920b39c35",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "hide",
+   1451,
+   "a658319920b39c35",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "site change",
+   1047,
+   "e60dc2f92b531600",
+   "aa49e98ceb8a35f5",
+   "M:giga-browser-status"
+  ],
+  [
+   "refresh handle",
+   1047,
+   "e60dc2f92b531600",
+   "dc726d32d9bc6cf0",
+   "M:giga-browser-status,service_status"
+  ],
+  [
+   "nav uploaded 2",
+   894,
+   "a18a3d364072a0b3",
+   "4f53cda18c2baa0c",
+   ""
+  ],
+  [
+   "copy skus",
+   894,
+   "a18a3d364072a0b3",
+   "4f53cda18c2baa0c",
+   ""
+  ]
+ ]
+}

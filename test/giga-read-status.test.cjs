@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {GigaBrowser} = require('../desktop/giga-browser.cjs');
+const {GigaBrowser} = require('../desktop/giga-browser/giga-browser.cjs');
 const id = '11111111-2222-4333-8444-555555555555';
 
 function fixture(op = 'read_rates', expiresAt = 2500, connectedAt = 900) {

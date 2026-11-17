@@ -1,6 +1,6 @@
 # Batch submission
 
-Maintainer: Codex. This is the client contract, not private deployment configuration.
+Maintainer: Claude (client group). This is the client contract, not private deployment configuration.
 
 The user reviews a fixed list of eligible products with their prices and quantities,
 then confirms once. Ineligible products stay visible with their own explanation.

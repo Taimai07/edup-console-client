@@ -38,8 +38,8 @@ async function settle(runner,phase){
 }
 
 test('440 of 450 uses the remaining 10 and restores 59 previously handled products',async()=>{
-  const {usage,runner}=await import('../ui/listing-runner.js');
-  const {openSegmentJournal}=await import('../ui/giga-segment-journal.js');
+  const {usage,runner}=await import('../ui/listing/listing-runner.js');
+  const {openSegmentJournal}=await import('../ui/giga/giga-segment-journal.js');
   const journal=await openSegmentJournal(localStorage,{site:'US',operation:'giga_prepare',parent:null,codes});
   for(const group of [codes.slice(0,20),codes.slice(20,40),codes.slice(40,59)]){
     const key=group.join(',');const id=journal.reserve(key,group);journal.seen(key,{id,state:'completed'});
@@ -62,7 +62,7 @@ test('440 of 450 uses the remaining 10 and restores 59 previously handled produc
 });
 
 test('next-day resume sends only the remaining ten and resets pause presentation',async()=>{
-  const {runner}=await import('../ui/listing-runner.js');
+  const {runner}=await import('../ui/listing/listing-runner.js');
   clock=new Date(2026,10,11,9,0).getTime();
   runner.start({kind:'prepare',site:'US',codes});
   await settle(runner,'done');

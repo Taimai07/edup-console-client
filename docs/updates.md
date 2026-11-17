@@ -1,6 +1,6 @@
 # Updates and recovery
 
-Maintainer: Codex. No unresolved collaborator comments.
+Maintainer: Claude (client group). No unresolved collaborator comments.
 
 Application patches contain the complete application payload, not a delta against
 the immediately previous client. Compatible bootstrap/runtime installations can

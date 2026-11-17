@@ -1,0 +1,4880 @@
+{
+ "steps": 36,
+ "trace": [
+  {
+   "name": "export names",
+   "value": [
+    "axisScale",
+    "bjtDay",
+    "card",
+    "chart",
+    "el",
+    "entries",
+    "fxNote",
+    "moneyText",
+    "names",
+    "number",
+    "profitSeries",
+    "profitView",
+    "salesSeries",
+    "siteNames",
+    "strategies",
+    "sumUSD",
+    "table",
+    "today",
+    "totals",
+    "usd",
+    "usdText"
+   ]
+  },
+  {
+   "name": "names",
+   "value": [
+    {
+     "sales": "总销售额（美元）",
+     "units": "售出件数",
+     "orders": "订单数",
+     "profit": "估算总毛利（美元）",
+     "ads": "广告花费",
+     "sessions": "访问次数",
+     "refunds": "退货／退款"
+    },
+    {
+     "DE": "德国",
+     "FR": "法国",
+     "US": "美国",
+     "GB": "英国",
+     "UK": "英国",
+     "NL": "荷兰",
+     "IT": "意大利",
+     "ES": "西班牙",
+     "SE": "瑞典",
+     "CA": "加拿大",
+     "MX": "墨西哥",
+     "BR": "巴西",
+     "IE": "爱尔兰",
+     "SA": "沙特"
+    }
+   ]
+  },
+  {
+   "name": "el",
+   "value": {
+    "tag": "div",
+    "attrs": {},
+    "cls": "c",
+    "text": "hi",
+    "kids": []
+   }
+  },
+  {
+   "name": "el no text",
+   "value": {
+    "tag": "span",
+    "attrs": {},
+    "cls": "",
+    "kids": []
+   }
+  },
+  {
+   "name": "card",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "title",
+      "kids": []
+     },
+     {
+      "tag": "p",
+      "attrs": {},
+      "cls": "muted",
+      "text": "sub",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "card no text",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "title",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "number",
+   "value": [
+    "—",
+    "—",
+    "—",
+    "0",
+    "12",
+    "1,234,567.89",
+    "—",
+    "—",
+    "0.01"
+   ]
+  },
+  {
+   "name": "bjtDay/today",
+   "value": [
+    "2026-11-16",
+    "2026-11-15",
+    "2026-11-16"
+   ]
+  },
+  {
+   "name": "entries",
+   "value": [
+    [
+     "US",
+     "DE"
+    ],
+    [
+     "US"
+    ],
+    [],
+    []
+   ]
+  },
+  {
+   "name": "entries empty",
+   "value": []
+  },
+  {
+   "name": "usd",
+   "value": [
+    5,
+    5.5,
+    null,
+    0,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "name": "sumUSD",
+   "value": [
+    {
+     "amount": 3.2,
+     "missing": []
+    },
+    {
+     "amount": null,
+     "missing": [
+      "JPY"
+     ]
+    },
+    {
+     "amount": null,
+     "missing": []
+    }
+   ]
+  },
+  {
+   "name": "usdText/moneyText/fxNote",
+   "value": [
+    "—",
+    "—",
+    "USD 1,234.5",
+    "USD 1 · EUR 2.5",
+    "—",
+    "参考汇率日 2026-11-15 · ECB；全段趋势使用同一参考汇率，非实际结算金额。",
+    "参考汇率尚未取得，非美元金额暂不汇总。"
+   ]
+  },
+  {
+   "name": "profitView",
+   "value": [
+    {
+     "profitUSD": 12.5,
+     "coveredUnits": 5,
+     "totalUnits": 7,
+     "complete": false,
+     "note": "n",
+     "basis": "b",
+     "missing": [
+      "X"
+     ],
+     "hourly": [
+      {
+       "date": "2026-11-16T00:00:00+08:00",
+       "currency": "USD",
+       "value": 1
+      },
+      {
+       "date": "2026-11-16T01:00:00+08:00",
+       "currency": "USD",
+       "value": null
+      }
+     ]
+    },
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "name": "totals",
+   "value": [
+    {
+     "ready": true,
+     "money": {
+      "USD": 30.5,
+      "EUR": 30,
+      "JPY": 5
+     },
+     "units": 8,
+     "orders": 5,
+     "coverage": 5,
+     "profitUnits": 7,
+     "profitNote": "n",
+     "profitBasis": "b",
+     "profitMissing": [
+      "X"
+     ],
+     "siteCount": 2,
+     "salesUSD": null,
+     "profitUSD": 12.5,
+     "missingRates": [
+      "JPY"
+     ]
+    },
+    {
+     "ready": true,
+     "money": {
+      "USD": 30.5
+     },
+     "units": 3,
+     "orders": 2,
+     "coverage": 3,
+     "profitUnits": 3,
+     "profitNote": "服务器毛利尚未生成",
+     "profitBasis": "",
+     "profitMissing": [],
+     "siteCount": 1,
+     "salesUSD": 30.5,
+     "profitUSD": 7,
+     "missingRates": []
+    },
+    {
+     "ready": false,
+     "money": {},
+     "units": null,
+     "orders": null,
+     "coverage": 0,
+     "profitUSD": null
+    },
+    {
+     "ready": false,
+     "money": {},
+     "units": null,
+     "orders": null,
+     "coverage": 0,
+     "profitUSD": null
+    },
+    {
+     "ready": false,
+     "money": {},
+     "units": null,
+     "orders": null,
+     "coverage": 0,
+     "profitUSD": null
+    }
+   ]
+  },
+  {
+   "name": "salesSeries",
+   "value": [
+    [
+     {
+      "date": "2026-11-16T00:00:00+08:00",
+      "currency": "USD",
+      "value": 43.5
+     },
+     {
+      "date": "2026-11-16T01:00:00+08:00",
+      "currency": "USD",
+      "value": null
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 213.3
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": 219.60000000000002
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": 225.9
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": 232.2
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": 238.5
+     }
+    ],
+    [
+     {
+      "date": "2026-10-30",
+      "currency": "USD",
+      "value": 144
+     },
+     {
+      "date": "2026-10-31",
+      "currency": "USD",
+      "value": 150.3
+     },
+     {
+      "date": "2026-11-01",
+      "currency": "USD",
+      "value": 156.6
+     },
+     {
+      "date": "2026-11-02",
+      "currency": "USD",
+      "value": 162.9
+     },
+     {
+      "date": "2026-11-03",
+      "currency": "USD",
+      "value": 169.2
+     },
+     {
+      "date": "2026-11-04",
+      "currency": "USD",
+      "value": 175.5
+     },
+     {
+      "date": "2026-11-05",
+      "currency": "USD",
+      "value": 181.8
+     },
+     {
+      "date": "2026-11-06",
+      "currency": "USD",
+      "value": 188.10000000000002
+     },
+     {
+      "date": "2026-11-07",
+      "currency": "USD",
+      "value": 194.4
+     },
+     {
+      "date": "2026-11-08",
+      "currency": "USD",
+      "value": 200.7
+     },
+     {
+      "date": "2026-11-09",
+      "currency": "USD",
+      "value": 207
+     },
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 213.3
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": 219.60000000000002
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": 225.9
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": 232.2
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": 238.5
+     }
+    ],
+    [
+     {
+      "date": "2026-10-30",
+      "currency": "USD",
+      "value": 144
+     },
+     {
+      "date": "2026-10-31",
+      "currency": "USD",
+      "value": 150.3
+     },
+     {
+      "date": "2026-11-01",
+      "currency": "USD",
+      "value": 156.6
+     },
+     {
+      "date": "2026-11-02",
+      "currency": "USD",
+      "value": 162.9
+     },
+     {
+      "date": "2026-11-03",
+      "currency": "USD",
+      "value": 169.2
+     },
+     {
+      "date": "2026-11-04",
+      "currency": "USD",
+      "value": 175.5
+     },
+     {
+      "date": "2026-11-05",
+      "currency": "USD",
+      "value": 181.8
+     },
+     {
+      "date": "2026-11-06",
+      "currency": "USD",
+      "value": 188.10000000000002
+     },
+     {
+      "date": "2026-11-07",
+      "currency": "USD",
+      "value": 194.4
+     },
+     {
+      "date": "2026-11-08",
+      "currency": "USD",
+      "value": 200.7
+     },
+     {
+      "date": "2026-11-09",
+      "currency": "USD",
+      "value": 207
+     },
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 213.3
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": 219.60000000000002
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": 225.9
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": 232.2
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": 238.5
+     }
+    ],
+    [
+     {
+      "date": "2026-11-16T00:00:00+08:00",
+      "currency": "件",
+      "value": 5
+     },
+     {
+      "date": "2026-11-16T01:00:00+08:00",
+      "currency": "件",
+      "value": 3
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "件",
+      "value": 12
+     }
+    ],
+    [
+     {
+      "date": "2026-10-30",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-10-31",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-01",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-02",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-03",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-04",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-05",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-06",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-07",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-08",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-09",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-10",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "件",
+      "value": 12
+     }
+    ],
+    [
+     {
+      "date": "2026-10-30",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-10-31",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-01",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-02",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-03",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-04",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-05",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-06",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-07",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-08",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-09",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-10",
+      "currency": "件",
+      "value": 12
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "件",
+      "value": 6
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "件",
+      "value": 8
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "件",
+      "value": 10
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "件",
+      "value": 12
+     }
+    ],
+    [
+     {
+      "date": "2026-11-16T00:00:00+08:00",
+      "currency": "单",
+      "value": 3
+     },
+     {
+      "date": "2026-11-16T01:00:00+08:00",
+      "currency": "单",
+      "value": 2
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "单",
+      "value": 4
+     }
+    ],
+    [
+     {
+      "date": "2026-10-30",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-10-31",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-01",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-02",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-03",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-04",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-05",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-06",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-07",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-08",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-09",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-10",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "单",
+      "value": 4
+     }
+    ],
+    [
+     {
+      "date": "2026-10-30",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-10-31",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-01",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-02",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-03",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-04",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-05",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-06",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-07",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-08",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-09",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-10",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "单",
+      "value": 4
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "单",
+      "value": 4
+     }
+    ]
+   ]
+  },
+  {
+   "name": "salesSeries US",
+   "value": [
+    {
+     "date": "2026-11-10",
+     "currency": "USD",
+     "value": 133
+    },
+    {
+     "date": "2026-11-11",
+     "currency": "USD",
+     "value": 136
+    },
+    {
+     "date": "2026-11-12",
+     "currency": "USD",
+     "value": 139
+    },
+    {
+     "date": "2026-11-13",
+     "currency": "USD",
+     "value": 142
+    },
+    {
+     "date": "2026-11-14",
+     "currency": "USD",
+     "value": 145
+    }
+   ]
+  },
+  {
+   "name": "profitSeries",
+   "value": [
+    [],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 2
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": -1
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-15",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-16",
+      "currency": "USD",
+      "value": 7,
+      "coveredUnits": 3,
+      "totalUnits": 3,
+      "complete": true
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 2
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": -1
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-15",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-16",
+      "currency": "USD",
+      "value": 7,
+      "coveredUnits": 3,
+      "totalUnits": 3,
+      "complete": true
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 2
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": -1
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-15",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-16",
+      "currency": "USD",
+      "value": 7,
+      "coveredUnits": 3,
+      "totalUnits": 3,
+      "complete": true
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 2
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": -1
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-15",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-16",
+      "currency": "USD",
+      "value": 7,
+      "coveredUnits": 3,
+      "totalUnits": 3,
+      "complete": true
+     }
+    ],
+    [
+     {
+      "date": "2026-11-10",
+      "currency": "USD",
+      "value": 2
+     },
+     {
+      "date": "2026-11-11",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": -1
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": null
+     }
+    ],
+    [
+     {
+      "date": "2026-11-12",
+      "currency": "USD",
+      "value": -1
+     },
+     {
+      "date": "2026-11-13",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-14",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-15",
+      "currency": "USD",
+      "value": null
+     },
+     {
+      "date": "2026-11-16",
+      "currency": "USD",
+      "value": 7,
+      "coveredUnits": 3,
+      "totalUnits": 3,
+      "complete": true
+     }
+    ],
+    []
+   ]
+  },
+  {
+   "name": "profitSeries ALL today",
+   "value": [
+    {
+     "date": "2026-11-16T00:00:00+08:00",
+     "currency": "USD",
+     "value": 1
+    },
+    {
+     "date": "2026-11-16T01:00:00+08:00",
+     "currency": "USD",
+     "value": null
+    }
+   ]
+  },
+  {
+   "name": "profitSeries none",
+   "value": [
+    [],
+    []
+   ]
+  },
+  {
+   "name": "axisScale",
+   "value": [
+    {
+     "min": 0,
+     "max": 3,
+     "step": 0.5
+    },
+    {
+     "min": -6,
+     "max": 10,
+     "step": 2
+    },
+    {
+     "min": 0,
+     "max": 1,
+     "step": 0.2
+    },
+    {
+     "min": 0,
+     "max": 0.004,
+     "step": 0.0005
+    },
+    {
+     "min": 0,
+     "max": 60000,
+     "step": 10000
+    },
+    {
+     "min": -1,
+     "max": 1,
+     "step": 0.2
+    }
+   ]
+  },
+  {
+   "name": "table",
+   "value": {
+    "tag": "div",
+    "attrs": {},
+    "cls": "scroll",
+    "kids": [
+     {
+      "tag": "table",
+      "attrs": {},
+      "cls": "",
+      "kids": [
+       {
+        "tag": "tr",
+        "attrs": {},
+        "cls": "",
+        "kids": [
+         {
+          "tag": "th",
+          "attrs": {},
+          "cls": "",
+          "text": "a",
+          "kids": []
+         },
+         {
+          "tag": "th",
+          "attrs": {},
+          "cls": "",
+          "text": "b",
+          "kids": []
+         }
+        ]
+       },
+       {
+        "tag": "tr",
+        "attrs": {},
+        "cls": "",
+        "kids": [
+         {
+          "tag": "td",
+          "attrs": {},
+          "cls": "",
+          "text": "1",
+          "kids": []
+         },
+         {
+          "tag": "td",
+          "attrs": {},
+          "cls": "",
+          "text": "—",
+          "kids": []
+         }
+        ]
+       },
+       {
+        "tag": "tr",
+        "attrs": {},
+        "cls": "",
+        "kids": [
+         {
+          "tag": "td",
+          "attrs": {},
+          "cls": "",
+          "text": "—",
+          "kids": []
+         },
+         {
+          "tag": "td",
+          "attrs": {},
+          "cls": "",
+          "text": "x",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart days",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "趋势",
+      "kids": []
+     },
+     {
+      "tag": "p",
+      "attrs": {},
+      "cls": "muted",
+      "text": "n",
+      "kids": []
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-scroll",
+      "kids": [
+       {
+        "tag": "svg",
+        "attrs": {
+         "viewBox": "0 0 1200 480",
+         "role": "img",
+         "aria-label": "趋势；左右方向键查看数据",
+         "tabindex": "0"
+        },
+        "cls": "trend",
+        "kids": [
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 395H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "400",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "-2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 336.6666666666667H1165",
+           "stroke": "#9dabae",
+           "stroke-dasharray": "0"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "341.6666666666667",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 278.3333333333333H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "283.3333333333333",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 220H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "225",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "4",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 161.66666666666666H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "166.66666666666666",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "6",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 103.33333333333333H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "108.33333333333333",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "8",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "50",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "10",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V395H1165",
+           "stroke": "#95a9af",
+           "fill": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "22",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "件",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "467",
+           "text-anchor": "end",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "日期",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "425",
+           "text-anchor": "start",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-01",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "447",
+           "text-anchor": "start",
+           "class": "date-caption"
+          },
+          "cls": "",
+          "text": "2026-11-01",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M366.25 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "366.25",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-02",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M632.5 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "632.5",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-03",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M898.75 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "898.75",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-04",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1165 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "425",
+           "text-anchor": "end",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-05",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": " M100 249.16666666666669 M632.5 88.75 L898.75 395 L1165 190.83333333333334",
+           "stroke": "#248671",
+           "stroke-width": "3",
+           "fill": "none",
+           "stroke-linejoin": "round"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "100",
+           "cy": "249.16666666666669",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "632.5",
+           "cy": "88.75",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "898.75",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1165",
+           "cy": "190.83333333333334",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "",
+           "stroke": "#527777",
+           "stroke-dasharray": "5 4",
+           "pointer-events": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "r": "6",
+           "fill": "#102b36",
+           "pointer-events": "none",
+           "visibility": "hidden"
+          },
+          "cls": "",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-readout",
+      "text": "移动鼠标或使用左右方向键查看时间与数值",
+      "kids": []
+     },
+     {
+      "tag": "p",
+      "attrs": {},
+      "cls": "muted",
+      "text": "部分时间点缺数据或缺汇率，已留空。",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart hours",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "小时",
+      "kids": []
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-scroll",
+      "kids": [
+       {
+        "tag": "svg",
+        "attrs": {
+         "viewBox": "0 0 1200 480",
+         "role": "img",
+         "aria-label": "小时；左右方向键查看数据",
+         "tabindex": "0"
+        },
+        "cls": "trend",
+        "kids": [
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 395H1165",
+           "stroke": "#9dabae",
+           "stroke-dasharray": "0"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "400",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 345H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "350",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "5",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 295H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "300",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "10",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 245H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "250",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "15",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 195H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "200",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "20",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 145H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "150",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "25",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 95H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "100",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "30",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "50",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "35",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V395H1165",
+           "stroke": "#95a9af",
+           "fill": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "22",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "USD",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "467",
+           "text-anchor": "end",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "时间（北京时间）",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "425",
+           "text-anchor": "start",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "00:00",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "447",
+           "text-anchor": "start",
+           "class": "date-caption"
+          },
+          "cls": "",
+          "text": "2026-11-16",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M238.91304347826087 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "238.91304347826087",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "03:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M377.82608695652175 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "377.82608695652175",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "06:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M516.7391304347826 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "516.7391304347826",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "09:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M655.6521739130435 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "655.6521739130435",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "12:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M794.5652173913044 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "794.5652173913044",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "15:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M933.4782608695652 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "933.4782608695652",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "18:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1072.391304347826 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1072.391304347826",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "21:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1165 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "425",
+           "text-anchor": "end",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "23:00",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": " M146.30434782608694 380 L192.6086956521739 365 L238.91304347826087 350 L285.2173913043478 335 M377.82608695652175 305 L424.1304347826087 290 L470.4347826086956 275 L516.7391304347826 260 M609.3478260869565 230 L655.6521739130435 215 L701.9565217391304 200 L748.2608695652174 185 M840.8695652173913 155 L887.1739130434783 140 L933.4782608695652 125 L979.7826086956521 110 M1072.391304347826 80 L1118.695652173913 65 L1165 50",
+           "stroke": "#248671",
+           "stroke-width": "3",
+           "fill": "none",
+           "stroke-linejoin": "round"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "146.30434782608694",
+           "cy": "380",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "192.6086956521739",
+           "cy": "365",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "238.91304347826087",
+           "cy": "350",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "285.2173913043478",
+           "cy": "335",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "377.82608695652175",
+           "cy": "305",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "424.1304347826087",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "470.4347826086956",
+           "cy": "275",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "516.7391304347826",
+           "cy": "260",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "609.3478260869565",
+           "cy": "230",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "655.6521739130435",
+           "cy": "215",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "701.9565217391304",
+           "cy": "200",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "748.2608695652174",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "840.8695652173913",
+           "cy": "155",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "887.1739130434783",
+           "cy": "140",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "933.4782608695652",
+           "cy": "125",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "979.7826086956521",
+           "cy": "110",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1072.391304347826",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1118.695652173913",
+           "cy": "65",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1165",
+           "cy": "50",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "",
+           "stroke": "#527777",
+           "stroke-dasharray": "5 4",
+           "pointer-events": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "r": "6",
+           "fill": "#102b36",
+           "pointer-events": "none",
+           "visibility": "hidden"
+          },
+          "cls": "",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-readout",
+      "text": "移动鼠标或使用左右方向键查看时间与数值",
+      "kids": []
+     },
+     {
+      "tag": "p",
+      "attrs": {},
+      "cls": "muted",
+      "text": "部分时间点缺数据或缺汇率，已留空。",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart range",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "范围",
+      "kids": []
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-scroll",
+      "kids": [
+       {
+        "tag": "svg",
+        "attrs": {
+         "viewBox": "0 0 1200 480",
+         "role": "img",
+         "aria-label": "范围；左右方向键查看数据",
+         "tabindex": "0"
+        },
+        "cls": "trend",
+        "kids": [
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 395H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "400",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "-2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 336.6666666666667H1165",
+           "stroke": "#9dabae",
+           "stroke-dasharray": "0"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "341.6666666666667",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 278.3333333333333H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "283.3333333333333",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 220H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "225",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "4",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 161.66666666666666H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "166.66666666666666",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "6",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 103.33333333333333H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "108.33333333333333",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "8",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "50",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "10",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V395H1165",
+           "stroke": "#95a9af",
+           "fill": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "22",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "数值",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "467",
+           "text-anchor": "end",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "日期",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "425",
+           "text-anchor": "start",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-02",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "447",
+           "text-anchor": "start",
+           "class": "date-caption"
+          },
+          "cls": "",
+          "text": "2026-11-02",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M632.5 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "632.5",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-03",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1165 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "425",
+           "text-anchor": "end",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-04",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": " M632.5 88.75 L1165 395",
+           "stroke": "#248671",
+           "stroke-width": "3",
+           "fill": "none",
+           "stroke-linejoin": "round"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "632.5",
+           "cy": "88.75",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1165",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "",
+           "stroke": "#527777",
+           "stroke-dasharray": "5 4",
+           "pointer-events": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "r": "6",
+           "fill": "#102b36",
+           "pointer-events": "none",
+           "visibility": "hidden"
+          },
+          "cls": "",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-readout",
+      "text": "移动鼠标或使用左右方向键查看时间与数值",
+      "kids": []
+     },
+     {
+      "tag": "p",
+      "attrs": {},
+      "cls": "muted",
+      "text": "部分时间点缺数据或缺汇率，已留空。",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart empty",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "空",
+      "kids": []
+     },
+     {
+      "tag": "p",
+      "attrs": {},
+      "cls": "empty",
+      "text": "当前范围没有可用数据，未按0补齐。",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart single",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "一点",
+      "kids": []
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-scroll",
+      "kids": [
+       {
+        "tag": "svg",
+        "attrs": {
+         "viewBox": "0 0 1200 480",
+         "role": "img",
+         "aria-label": "一点；左右方向键查看数据",
+         "tabindex": "0"
+        },
+        "cls": "trend",
+        "kids": [
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 395H1165",
+           "stroke": "#9dabae",
+           "stroke-dasharray": "0"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "400",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 351.25H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "356.25",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0.5",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 307.5H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "312.5",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "1",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 263.75H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "268.75",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "1.5",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 220H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "225",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 176.25H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "181.25",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "2.5",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 132.5H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "137.5",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "3",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 88.75H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "93.75",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "3.5",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "50",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "4",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V395H1165",
+           "stroke": "#95a9af",
+           "fill": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "22",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "数值",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "467",
+           "text-anchor": "end",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "日期",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M632.5 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "632.5",
+           "y": "425",
+           "text-anchor": "start",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-01",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "632.5",
+           "y": "447",
+           "text-anchor": "start",
+           "class": "date-caption"
+          },
+          "cls": "",
+          "text": "2026-11-01",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": " M632.5 45",
+           "stroke": "#248671",
+           "stroke-width": "3",
+           "fill": "none",
+           "stroke-linejoin": "round"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "632.5",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "",
+           "stroke": "#527777",
+           "stroke-dasharray": "5 4",
+           "pointer-events": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "r": "6",
+           "fill": "#102b36",
+           "pointer-events": "none",
+           "visibility": "hidden"
+          },
+          "cls": "",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-readout",
+      "text": "移动鼠标或使用左右方向键查看时间与数值",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart interaction",
+   "value": {
+    "steps": [
+     "移动鼠标或使用左右方向键查看时间与数值",
+     "2026-11-01 · 3 件",
+     "2026-11-05 · 5 件",
+     "2026-11-04 · -2 件|true",
+     "2026-11-03 · 8.5 件|true",
+     "2026-11-02 · — 件|true",
+     "2026-11-03 · 8.5 件|true",
+     "2026-11-04 · -2 件|true",
+     "2026-11-05 · 5 件|true",
+     "2026-11-05 · 5 件|true",
+     "2026-11-05 · 5 件|true",
+     "2026-11-05 · 5 件|true"
+    ],
+    "cursor": {
+     "d": "M1165 45V395",
+     "stroke": "#527777",
+     "stroke-dasharray": "5 4",
+     "pointer-events": "none"
+    }
+   }
+  },
+  {
+   "name": "strategies",
+   "value": [
+    [
+     {
+      "title": "1条商品有刊登提示",
+      "body": "优先核对合规资料能否访问；字段展示受限与整条停售分开处理。",
+      "asOf": "gen"
+     },
+     {
+      "site": "US",
+      "_change": 0.1826086956521739,
+      "title": "近7天销售额上升 18.26%",
+      "body": "前7天 805 → 最近7天 952 USD。结合库存和毛利验证后再决定扩量。",
+      "asOf": "a-us"
+     },
+     {
+      "site": "DE",
+      "_change": 0.38181818181818183,
+      "title": "近7天销售额上升 38.18%",
+      "body": "前7天 385 → 最近7天 532 EUR。结合库存和毛利验证后再决定扩量。",
+      "asOf": "a-de"
+     }
+    ],
+    [
+     {
+      "title": "1条商品有刊登提示",
+      "body": "优先核对合规资料能否访问；字段展示受限与整条停售分开处理。",
+      "asOf": "gen"
+     },
+     {
+      "site": "US",
+      "_change": 0.1826086956521739,
+      "title": "近7天销售额上升 18.26%",
+      "body": "前7天 805 → 最近7天 952 USD。结合库存和毛利验证后再决定扩量。",
+      "asOf": "a-us"
+     }
+    ],
+    [
+     {
+      "site": "DE",
+      "_change": 0.38181818181818183,
+      "title": "近7天销售额上升 38.18%",
+      "body": "前7天 385 → 最近7天 532 EUR。结合库存和毛利验证后再决定扩量。",
+      "asOf": "a-de"
+     }
+    ],
+    []
+   ]
+  },
+  {
+   "name": "strategies quiet",
+   "value": [
+    [
+     {
+      "site": "US",
+      "title": "t-us"
+     },
+     {
+      "site": "DE",
+      "title": "t-de"
+     }
+    ],
+    [
+     {
+      "site": "US",
+      "title": "t-us"
+     },
+     {
+      "site": "DE",
+      "title": "t-de"
+     }
+    ]
+   ]
+  },
+  {
+   "name": "strategies falling",
+   "value": [
+    {
+     "site": "US",
+     "_change": -0.35,
+     "title": "近7天销售额下降 35%",
+     "body": "前7天 5,600 → 最近7天 3,640 USD。先区分流量减少、转化下降和活动结束，再调整投放。",
+     "asOf": "z"
+    }
+   ]
+  },
+  {
+   "name": "axisScale extra",
+   "value": [
+    {
+     "min": 0,
+     "max": 20,
+     "step": 2.5
+    },
+    {
+     "min": 0,
+     "max": 2.5,
+     "step": 0.5
+    },
+    {
+     "min": 0,
+     "max": 8,
+     "step": 1
+    },
+    {
+     "min": -5,
+     "max": 25,
+     "step": 5
+    }
+   ]
+  },
+  {
+   "name": "chart 40 days",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "长",
+      "kids": []
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-scroll",
+      "kids": [
+       {
+        "tag": "svg",
+        "attrs": {
+         "viewBox": "0 0 1200 480",
+         "role": "img",
+         "aria-label": "长；左右方向键查看数据",
+         "tabindex": "0"
+        },
+        "cls": "trend",
+        "kids": [
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 395H1165",
+           "stroke": "#9dabae",
+           "stroke-dasharray": "0"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "400",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 325H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "330",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 255H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "260",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "4",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 185H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "190",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "6",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 115H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "120",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "8",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "50",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "10",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V395H1165",
+           "stroke": "#95a9af",
+           "fill": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "22",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "x",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "467",
+           "text-anchor": "end",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "日期",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "425",
+           "text-anchor": "start",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-01",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "447",
+           "text-anchor": "start",
+           "class": "date-caption"
+          },
+          "cls": "",
+          "text": "2026-10-01",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M236.53846153846152 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "236.53846153846152",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-06",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M373.07692307692304 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "373.07692307692304",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-11",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M509.61538461538464 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "509.61538461538464",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-16",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M646.1538461538461 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "646.1538461538461",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-21",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M782.6923076923077 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "782.6923076923077",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-26",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M919.2307692307693 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "919.2307692307693",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-31",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1055.769230769231 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1055.769230769231",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-05",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1165 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "425",
+           "text-anchor": "end",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "11-09",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": " M100 395 L127.3076923076923 150 L154.6153846153846 290 L181.92307692307693 45 L209.23076923076923 185 L236.53846153846152 325 L263.84615384615387 80 L291.1538461538462 220 L318.46153846153845 360 L345.7692307692308 115 L373.07692307692304 255 L400.38461538461536 395 L427.69230769230774 150 L455 290 L482.3076923076923 45 L509.61538461538464 185 L536.9230769230769 325 L564.2307692307693 80 L591.5384615384615 220 L618.8461538461538 360 L646.1538461538461 115 L673.4615384615385 255 L700.7692307692307 395 L728.0769230769231 150 L755.3846153846155 290 L782.6923076923077 45 L810 185 L837.3076923076923 325 L864.6153846153846 80 L891.9230769230769 220 L919.2307692307693 360 L946.5384615384614 115 L973.8461538461538 255 L1001.1538461538462 395 L1028.4615384615386 150 L1055.769230769231 290 L1083.076923076923 45 L1110.3846153846152 185 L1137.6923076923076 325 L1165 80",
+           "stroke": "#248671",
+           "stroke-width": "3",
+           "fill": "none",
+           "stroke-linejoin": "round"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "100",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "127.3076923076923",
+           "cy": "150",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "154.6153846153846",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "181.92307692307693",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "209.23076923076923",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "236.53846153846152",
+           "cy": "325",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "263.84615384615387",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "291.1538461538462",
+           "cy": "220",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "318.46153846153845",
+           "cy": "360",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "345.7692307692308",
+           "cy": "115",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "373.07692307692304",
+           "cy": "255",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "400.38461538461536",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "427.69230769230774",
+           "cy": "150",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "455",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "482.3076923076923",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "509.61538461538464",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "536.9230769230769",
+           "cy": "325",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "564.2307692307693",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "591.5384615384615",
+           "cy": "220",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "618.8461538461538",
+           "cy": "360",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "646.1538461538461",
+           "cy": "115",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "673.4615384615385",
+           "cy": "255",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "700.7692307692307",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "728.0769230769231",
+           "cy": "150",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "755.3846153846155",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "782.6923076923077",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "810",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "837.3076923076923",
+           "cy": "325",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "864.6153846153846",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "891.9230769230769",
+           "cy": "220",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "919.2307692307693",
+           "cy": "360",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "946.5384615384614",
+           "cy": "115",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "973.8461538461538",
+           "cy": "255",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1001.1538461538462",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1028.4615384615386",
+           "cy": "150",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1055.769230769231",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1083.076923076923",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1110.3846153846152",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1137.6923076923076",
+           "cy": "325",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1165",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "",
+           "stroke": "#527777",
+           "stroke-dasharray": "5 4",
+           "pointer-events": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "r": "6",
+           "fill": "#102b36",
+           "pointer-events": "none",
+           "visibility": "hidden"
+          },
+          "cls": "",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-readout",
+      "text": "移动鼠标或使用左右方向键查看时间与数值",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "chart 19 days",
+   "value": {
+    "tag": "article",
+    "attrs": {},
+    "cls": "card chart-card",
+    "kids": [
+     {
+      "tag": "h2",
+      "attrs": {},
+      "cls": "",
+      "text": "十九",
+      "kids": []
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-scroll",
+      "kids": [
+       {
+        "tag": "svg",
+        "attrs": {
+         "viewBox": "0 0 1200 480",
+         "role": "img",
+         "aria-label": "十九；左右方向键查看数据",
+         "tabindex": "0"
+        },
+        "cls": "trend",
+        "kids": [
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 395H1165",
+           "stroke": "#9dabae",
+           "stroke-dasharray": "0"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "400",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "0",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 325H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "330",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "2",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 255H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "260",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "4",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 185H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "190",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "6",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 115H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "120",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "8",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45H1165",
+           "stroke": "#e1e9e9",
+           "stroke-dasharray": "3 4"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "85",
+           "y": "50",
+           "text-anchor": "end",
+           "class": "y-tick"
+          },
+          "cls": "",
+          "text": "10",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V395H1165",
+           "stroke": "#95a9af",
+           "fill": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "22",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "数值",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "467",
+           "text-anchor": "end",
+           "class": "axis-title"
+          },
+          "cls": "",
+          "text": "日期",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M100 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "425",
+           "text-anchor": "start",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-01",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "100",
+           "y": "447",
+           "text-anchor": "start",
+           "class": "date-caption"
+          },
+          "cls": "",
+          "text": "2026-10-01",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M277.5 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "277.5",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-04",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M455 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "455",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-07",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M632.5 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "632.5",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-10",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M810 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "810",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-13",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M987.5 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "987.5",
+           "y": "425",
+           "text-anchor": "middle",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-16",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "M1165 45V402",
+           "stroke": "#e9eeee"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "text",
+          "attrs": {
+           "x": "1165",
+           "y": "425",
+           "text-anchor": "end",
+           "class": "x-tick"
+          },
+          "cls": "",
+          "text": "10-19",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": " M100 395 L159.16666666666666 150 L218.33333333333331 290 L277.5 45 L336.66666666666663 185 L395.83333333333337 325 L455 80 L514.1666666666667 220 L573.3333333333333 360 L632.5 115 L691.6666666666667 255 L750.8333333333334 395 L810 150 L869.1666666666666 290 L928.3333333333334 45 L987.5 185 L1046.6666666666665 325 L1105.8333333333333 80 L1165 220",
+           "stroke": "#248671",
+           "stroke-width": "3",
+           "fill": "none",
+           "stroke-linejoin": "round"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "100",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "159.16666666666666",
+           "cy": "150",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "218.33333333333331",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "277.5",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "336.66666666666663",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "395.83333333333337",
+           "cy": "325",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "455",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "514.1666666666667",
+           "cy": "220",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "573.3333333333333",
+           "cy": "360",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "632.5",
+           "cy": "115",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "691.6666666666667",
+           "cy": "255",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "750.8333333333334",
+           "cy": "395",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "810",
+           "cy": "150",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "869.1666666666666",
+           "cy": "290",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "928.3333333333334",
+           "cy": "45",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "987.5",
+           "cy": "185",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1046.6666666666665",
+           "cy": "325",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1105.8333333333333",
+           "cy": "80",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "cx": "1165",
+           "cy": "220",
+           "r": "3.5",
+           "fill": "#248671"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "path",
+          "attrs": {
+           "d": "",
+           "stroke": "#527777",
+           "stroke-dasharray": "5 4",
+           "pointer-events": "none"
+          },
+          "cls": "",
+          "kids": []
+         },
+         {
+          "tag": "circle",
+          "attrs": {
+           "r": "6",
+           "fill": "#102b36",
+           "pointer-events": "none",
+           "visibility": "hidden"
+          },
+          "cls": "",
+          "kids": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "attrs": {},
+      "cls": "chart-readout",
+      "text": "移动鼠标或使用左右方向键查看时间与数值",
+      "kids": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "strategies many",
+   "value": [
+    {
+     "site": "S5",
+     "_change": -0.1949238578680203,
+     "title": "近7天销售额下降 19.49%",
+     "body": "前7天 985 → 最近7天 793 USD。先区分流量减少、转化下降和活动结束，再调整投放。",
+     "asOf": "m5"
+    },
+    {
+     "site": "S2",
+     "_change": -0.13649564375605033,
+     "title": "近7天销售额下降 13.65%",
+     "body": "前7天 1,033 → 最近7天 892 USD。先区分流量减少、转化下降和活动结束，再调整投放。",
+     "asOf": "m2"
+    },
+    {
+     "site": "S1",
+     "_change": -0.06280667320902845,
+     "title": "近7天销售额下降 6.28%",
+     "body": "前7天 1,019 → 最近7天 955 USD。先区分流量减少、转化下降和活动结束，再调整投放。",
+     "asOf": "m1"
+    },
+    {
+     "site": "S3",
+     "_change": -0.03970741901776385,
+     "title": "近7天销售额下降 3.97%",
+     "body": "前7天 957 → 最近7天 919 USD。先区分流量减少、转化下降和活动结束，再调整投放。",
+     "asOf": "m3"
+    },
+    {
+     "site": "S0",
+     "_change": 0.012935323383084577,
+     "title": "近7天销售额上升 1.29%",
+     "body": "前7天 1,005 → 最近7天 1,018 USD。结合库存和毛利验证后再决定扩量。",
+     "asOf": "m0"
+    },
+    {
+     "site": "S4",
+     "_change": 0.30973451327433627,
+     "title": "近7天销售额上升 30.97%",
+     "body": "前7天 791 → 最近7天 1,036 USD。结合库存和毛利验证后再决定扩量。",
+     "asOf": "m4"
+    }
+   ]
+  },
+  {
+   "name": "strategies zero base",
+   "value": [
+    {
+     "site": "Z",
+     "_change": 0,
+     "title": "近7天销售变化",
+     "body": "前7天 0 → 最近7天 0 USD。结合库存和毛利验证后再决定扩量。",
+     "asOf": "q"
+    }
+   ]
+  }
+ ]
+}

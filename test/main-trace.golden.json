@@ -1,0 +1,347 @@
+{
+ "ipcHandles": [
+  "edup:request",
+  "edup:ai",
+  "edup:maintenance",
+  "edup:ui-ready"
+ ],
+ "appOn": [
+  "ready",
+  "browser-window-created",
+  "second-instance",
+  "window-all-closed",
+  "before-quit"
+ ],
+ "calls": [
+  "win.show"
+ ],
+ "dialogs": [
+  [
+   "open",
+   "选择含商品编码的文件"
+  ],
+  [
+   "open",
+   "为这个商品选择补充资料"
+  ],
+  [
+   "save",
+   "导出诊断包（不含商品数据或密钥）",
+   "EDUPLINK-diagnostics-DATE.json",
+   "[{\"name\":\"JSON\",\"extensions\":[\"json\"]}]"
+  ],
+  [
+   "open",
+   "为这个商品选择补充资料"
+  ],
+  [
+   "open",
+   "选择含商品编码的文件"
+  ],
+  [
+   "save",
+   "导出诊断包（不含商品数据或密钥）",
+   "EDUPLINK-diagnostics-DATE.json",
+   "[{\"name\":\"JSON\",\"extensions\":[\"json\"]}]"
+  ]
+ ],
+ "shell": [
+  [
+   "openExternal",
+   "https://www.amazon.com/dp/B0ABCDEFGH"
+  ]
+ ],
+ "clipboard": [
+  "giga-browser-bridge"
+ ],
+ "windowInfo": {
+  "title": "EDUPLINK 运营工作台",
+  "minSize": [
+   980,
+   680
+  ],
+  "size": [
+   1320,
+   880
+  ],
+  "visible": false,
+  "prefs": {
+   "nodeIntegration": false,
+   "contextIsolation": true,
+   "sandbox": true
+  },
+  "protocolHandled": true,
+  "url": "edup://console/"
+ },
+ "menu": [
+  "文件:3",
+  "编辑:7",
+  "查看:6",
+  "窗口:2",
+  "帮助:1"
+ ],
+ "results": {
+  "ui-ready-again": {
+   "ok": {
+    "ready": true
+   }
+  },
+  "bad-sender": {
+   "err": "IPC_SOURCE_INVALID"
+  },
+  "settings:settings": {
+   "ok": {
+    "version": "0.9.0",
+    "apiVersion": 1,
+    "serverUrl": "https://console.eduplinkaudio.com",
+    "paired": false,
+    "deviceId": "<ID32>",
+    "recovery": null,
+    "patch": null,
+    "proxy": {
+     "mode": "direct"
+    }
+   }
+  },
+  "ai-view-get:ai-view-get": {
+   "ok": {
+    "thread": null,
+    "drafts": {
+     "_new": "x"
+    }
+   }
+  },
+  "ai-view-save:ai-view-save": {
+   "err": "AI_VIEW_INVALID"
+  },
+  "ziniao-settings:ziniao-settings": {
+   "ok": {
+    "binding": null
+   }
+  },
+  "ziniao-save-binding:ziniao-save-binding": {
+   "err": "ZINIAO_VERSION_NEEDS_VERIFICATION"
+  },
+  "ziniao-open:ziniao-open": {
+   "err": "STORE_BINDING_MISMATCH"
+  },
+  "read-cache:read-cache": {
+   "ok": {
+    "products": [
+     {
+      "sku": "A"
+     }
+    ],
+    "markets": []
+   }
+  },
+  "write-cache:write-cache": {
+   "ok": {
+    "saved": true
+   }
+  },
+  "extract-codes:extract-codes": {
+   "err": "TEXT_TOO_LARGE"
+  },
+  "extract-document:extract-document": {
+   "ok": {
+    "canceled": true
+   }
+  },
+  "upload-material:upload-material": {
+   "ok": {
+    "cancelled": true
+   }
+  },
+  "log-upload-status:log-upload-status": {
+   "ok": {
+    "enabled": true,
+    "pending": 0,
+    "lastSent": null,
+    "lastError": null
+   }
+  },
+  "upload-error-logs:upload-error-logs": {
+   "ok": {
+    "enabled": true,
+    "pending": 0,
+    "lastSent": null,
+    "lastError": null
+   }
+  },
+  "update-status:update-status": {
+   "ok": {
+    "state": "check_failed",
+    "currentVersion": "0.9.0",
+    "code": "HARNESS_FETCH_BLOCKED"
+   }
+  },
+  "check-update:check-update": {
+   "ok": {
+    "state": "check_failed",
+    "currentVersion": "0.9.0",
+    "code": "HARNESS_FETCH_BLOCKED"
+   }
+  },
+  "download-update:download-update": {
+   "err": "UPDATE_NOT_AVAILABLE"
+  },
+  "install-update:install-update": {
+   "err": "INSTALL_REQUIRES_PACKAGED_APP"
+  },
+  "check-and-install-update:check-and-install-update": {
+   "ok": {
+    "state": "deferred"
+   }
+  },
+  "configure:configure": {
+   "err": "Invalid URL"
+  },
+  "set-proxy:set-proxy": {
+   "err": "PROXY_SETTINGS_INVALID"
+  },
+  "test-proxy:test-proxy": {
+   "err": "HARNESS_FETCH_BLOCKED"
+  },
+  "pair:pair": {
+   "err": "HARNESS_FETCH_BLOCKED"
+  },
+  "giga-browser-status:giga-browser-status": "<machine>",
+  "giga-browser-folder:giga-browser-folder": "<machine>",
+  "giga-browser-copy-folder:giga-browser-copy-folder": {
+   "ok": {
+    "copied": true
+   }
+  },
+  "giga-browser-start:giga-browser-start": {
+   "err": "GIGA_REGION_MAPPING_NOT_VERIFIED"
+  },
+  "giga-store-start:giga-store-start": {
+   "err": "GIGA_REGION_MAPPING_NOT_VERIFIED"
+  },
+  "giga-browser-task:giga-browser-task": {
+   "err": "GIGA_BROWSER_TASK_ID_INVALID"
+  },
+  "giga-browser-reconcile:giga-browser-reconcile": {
+   "err": "GIGA_BROWSER_TASK_ID_INVALID"
+  },
+  "giga-browser-reuse:giga-browser-reuse": {
+   "err": "GIGA_CODES_INVALID"
+  },
+  "giga-browser-screen:giga-browser-screen": {
+   "err": "GIGA_BROWSER_TASK_ID_INVALID"
+  },
+  "giga-open-buyer-page:giga-open-buyer-page": {
+   "ok": {
+    "requested": true
+   }
+  },
+  "listing-event:listing-event": {
+   "ok": {
+    "logged": true
+   }
+  },
+  "diagnostics:diagnostics": {
+   "ok": {
+    "saved": false
+   }
+  },
+  "nope:nope": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "constructor:constructor": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "__proto__:__proto__": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "toString:toString": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "array:settings": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "null:null": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "undefined:undefined": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "[object Object]:[object Object]": {
+   "err": "IPC_ACTION_INVALID"
+  },
+  "with-file:upload-material": {
+   "err": "validateAIRequest is not defined"
+  },
+  "missing-file:extract-document": {
+   "err": "ENOENT: no such file or directory, open 'C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\edup-trace-<RAND>\\missing.txt'"
+  },
+  "with-path:diagnostics": {
+   "ok": {
+    "saved": true
+   }
+  }
+ },
+ "logs": [
+  "api_failed|HARNESS_FETCH_BLOCKED|diagnostics||error||0.9.0",
+  "api_failed|HARNESS_FETCH_BLOCKED|snapshot||error||0.9.0",
+  "client_started||||info||0.9.0",
+  "listing_runner_problem|LISTING_EVENT_INVALID||unknown|error||0.9.0",
+  "listing_runner_problem|LISTING_X||browser|error|3|0.9.0",
+  "network_mode_changed|||direct|info||0.9.0",
+  "ui_ready||||info||0.9.0",
+  "update_check_failed|HARNESS_FETCH_BLOCKED|||error||0.9.0"
+ ],
+ "diagnosticsKeys": [
+  "client",
+  "createdAt",
+  "errors",
+  "format",
+  "logs",
+  "retention",
+  "server"
+ ],
+ "diagnosticsClient": [
+  "apiVersion",
+  "arch",
+  "electron",
+  "paired",
+  "platform",
+  "version"
+ ],
+ "diagnosticsPaired": false,
+ "diagnosticsServer": {
+  "state": "unavailable"
+ },
+ "files": [
+  "DIPS",
+  "DIPS-wal",
+  "DawnGraphiteCache",
+  "DawnWebGPUCache",
+  "Extension State",
+  "GPUPersistentCache",
+  "GrShaderCache",
+  "ShaderCache",
+  "ai-view.json",
+  "connection.json",
+  "declarative_performance_observer.db",
+  "declarative_performance_observer.db-journal",
+  "device-identity.bin",
+  "snapshot.bin"
+ ],
+ "config": {
+  "serverUrl": "https://console.eduplinkaudio.com",
+  "paired": false,
+  "proxy": {
+   "mode": "direct"
+  }
+ },
+ "dialogsSorted": [
+  "[\"open\",\"选择含商品编码的文件\"]",
+  "[\"open\",\"为这个商品选择补充资料\"]",
+  "[\"save\",\"导出诊断包（不含商品数据或密钥）\",\"EDUPLINK-diagnostics-DATE.json\",\"[{\\\"name\\\":\\\"JSON\\\",\\\"extensions\\\":[\\\"json\\\"]}]\"]",
+  "[\"open\",\"为这个商品选择补充资料\"]",
+  "[\"open\",\"选择含商品编码的文件\"]",
+  "[\"save\",\"导出诊断包（不含商品数据或密钥）\",\"EDUPLINK-diagnostics-DATE.json\",\"[{\\\"name\\\":\\\"JSON\\\",\\\"extensions\\\":[\\\"json\\\"]}]\"]"
+ ]
+}

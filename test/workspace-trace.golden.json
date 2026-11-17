@@ -1,0 +1,1152 @@
+{
+ "steps": 229,
+ "errs": [],
+ "consoleErrors": [],
+ "trace": [
+  [
+   "products initial",
+   6282,
+   "1ade3cc3610c31fe"
+  ],
+  [
+   "products r0 click stat |库存待核实6未返回库存，不作为缺货",
+   3257,
+   "cecd43dfb2f02687"
+  ],
+  [
+   "products r1 click |查看全部 →",
+   1539,
+   "4b4a1bbfb7b8bdab"
+  ],
+  [
+   "products r2 click active|库存待核实",
+   1539,
+   "4b4a1bbfb7b8bdab"
+  ],
+  [
+   "products r3 click stat |零库存已收纳8单独管理，随时可展开",
+   4384,
+   "c41d91247d807a40"
+  ],
+  [
+   "products r4 select Custom issue · 555 (",
+   2831,
+   "1220c9d59cd2387d"
+  ],
+  [
+   "products r5 click stat |有可售库存56条商品链接",
+   3456,
+   "742c04ff7d532eb4"
+  ],
+  [
+   "products r6 click stat alert|优先与待处理40含收纳区中的 4 条",
+   3456,
+   "742c04ff7d532eb4"
+  ],
+  [
+   "products r7 input text",
+   2831,
+   "c80b8eb069656a3c"
+  ],
+  [
+   "products r8 click stat |零库存已收纳8单独管理，随时可展开",
+   2622,
+   "88f0ec896c1189a9"
+  ],
+  [
+   "products r9 click |查看全部 →",
+   1768,
+   "7fef0a7f188edd9b"
+  ],
+  [
+   "products r10 click more|上一页",
+   1768,
+   "7fef0a7f188edd9b"
+  ],
+  [
+   "products r11 click active|零库存收纳",
+   1768,
+   "7fef0a7f188edd9b"
+  ],
+  [
+   "products r12 click more|← 返回地区总览",
+   2622,
+   "88f0ec896c1189a9"
+  ],
+  [
+   "products r13 click |有库存商品",
+   2831,
+   "c80b8eb069656a3c"
+  ],
+  [
+   "products r14 select 商品识别资料待核对 · 8560 (8)",
+   2838,
+   "68a8a274751a7322"
+  ],
+  [
+   "products r15 click |查看全部 →",
+   2035,
+   "d55874b03233f445"
+  ],
+  [
+   "products r16 click stat |库存待核实6未返回库存，不作为缺货",
+   2520,
+   "8d84ace997b4a764"
+  ],
+  [
+   "products r17 input text",
+   2520,
+   "8d84ace997b4a764"
+  ],
+  [
+   "products r18 click tag-clear|清除标签",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r19 click filter-tag|商品识别资料待核对 · 8560  1",
+   2513,
+   "471ea8b7ded39adb"
+  ],
+  [
+   "products r20 click filter-tag chosen|商品识别资料待核对 · 8560  1",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r21 click active|库存待核实",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r22 click |查看全部 →",
+   1346,
+   "d2748a6e371fe79e"
+  ],
+  [
+   "products r23 click |有库存商品",
+   1776,
+   "08d0a137a3fd9138"
+  ],
+  [
+   "products r24 select 商品识别资料待核对 · 8560 (2)",
+   1819,
+   "8e40e13b0ca9b12a"
+  ],
+  [
+   "products r25 click more|上一页",
+   1819,
+   "8e40e13b0ca9b12a"
+  ],
+  [
+   "products r26 click |零库存收纳",
+   1661,
+   "dffebce13627f8db"
+  ],
+  [
+   "products r27 input text",
+   1661,
+   "dffebce13627f8db"
+  ],
+  [
+   "products r28 click stat |库存待核实6未返回库存，不作为缺货",
+   2513,
+   "471ea8b7ded39adb"
+  ],
+  [
+   "products r29 click stat |零库存已收纳8单独管理，随时可展开",
+   2832,
+   "053e580f65de6a7b"
+  ],
+  [
+   "products r30 click |有库存商品",
+   2622,
+   "b524153ca06103ec"
+  ],
+  [
+   "products r31 click active|有库存商品",
+   2622,
+   "b524153ca06103ec"
+  ],
+  [
+   "products r32 click tag-clear|清除标签",
+   2993,
+   "e02da7444e6efff4"
+  ],
+  [
+   "products r33 click |库存待核实",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r34 select 商品识别资料待核对 · 8560 (1)",
+   2513,
+   "471ea8b7ded39adb"
+  ],
+  [
+   "products r35 click tag-clear|清除标签",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r36 click |意大利 · 0",
+   1346,
+   "d2748a6e371fe79e"
+  ],
+  [
+   "products r37 input text",
+   1346,
+   "d2748a6e371fe79e"
+  ],
+  [
+   "products r38 click more|下一页",
+   1346,
+   "d2748a6e371fe79e"
+  ],
+  [
+   "products r39 click active|库存待核实",
+   1346,
+   "d2748a6e371fe79e"
+  ],
+  [
+   "products r40 click stat selected|库存待核实6未返回库存，不作为缺货",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r41 click stat |零库存已收纳8单独管理，随时可展开",
+   2579,
+   "0d080dbc4dfad883"
+  ],
+  [
+   "products r42 click filter-tag|Custom issue · 555  1",
+   2622,
+   "88f0ec896c1189a9"
+  ],
+  [
+   "products r43 click |波兰 · 0",
+   1446,
+   "6bfaef2d6dd4bb8d"
+  ],
+  [
+   "products r44 select 更多报错类型…",
+   1446,
+   "6bfaef2d6dd4bb8d"
+  ],
+  [
+   "products r45 click |库存待核实",
+   1659,
+   "170d13a2f460218e"
+  ],
+  [
+   "products r46 click stat selected|库存待核实6未返回库存，不作为缺货",
+   2513,
+   "0d16302b22f24e81"
+  ],
+  [
+   "products r47 input text",
+   2513,
+   "0d16302b22f24e81"
+  ],
+  [
+   "products r48 click |意大利 · 0",
+   1446,
+   "e3d70da74eedb6bb"
+  ],
+  [
+   "products r49 click more|上一页",
+   1446,
+   "e3d70da74eedb6bb"
+  ],
+  [
+   "products r50 click |零库存收纳",
+   1446,
+   "6bfaef2d6dd4bb8d"
+  ],
+  [
+   "products r51 click stat |有可售库存56条商品链接",
+   2831,
+   "c80b8eb069656a3c"
+  ],
+  [
+   "products r52 click |库存待核实",
+   2513,
+   "0d16302b22f24e81"
+  ],
+  [
+   "products r53 click stat |有可售库存56条商品链接",
+   2831,
+   "c80b8eb069656a3c"
+  ],
+  [
+   "products r54 select 商品识别资料待核对 · 8560 (8)",
+   2838,
+   "68a8a274751a7322"
+  ],
+  [
+   "products r55 click filter-tag chosen|商品识别资料待核对 · 8560  8",
+   2831,
+   "c80b8eb069656a3c"
+  ],
+  [
+   "products r56 click |查看全部 →",
+   1819,
+   "597a67f99c09fe14"
+  ],
+  [
+   "products r57 input text",
+   1819,
+   "597a67f99c09fe14"
+  ],
+  [
+   "products r58 click active|有库存商品",
+   1819,
+   "597a67f99c09fe14"
+  ],
+  [
+   "products r59 click tag-clear|清除标签",
+   1776,
+   "e4729cef66db12c4"
+  ],
+  [
+   "products r60 click stat |库存待核实6未返回库存，不作为缺货",
+   2470,
+   "77ec807225c0318c"
+  ],
+  [
+   "products r61 click |波兰 · 0",
+   1559,
+   "be8bb9ed1d007d22"
+  ],
+  [
+   "products r62 click |零库存收纳",
+   1346,
+   "595db56df7bd3cb1"
+  ],
+  [
+   "products r63 click |有库存商品",
+   1776,
+   "41cd77b5d6e39dd6"
+  ],
+  [
+   "products r64 select 资料链接无法访问 · 300403 (1",
+   1819,
+   "b1772217aea1c927"
+  ],
+  [
+   "products r65 click filter-tag|Custom issue · 555  2",
+   1826,
+   "b3e07747ea1bd698"
+  ],
+  [
+   "products r66 click stat selected|有可售库存56条商品链接",
+   2629,
+   "f7c4524182e68a25"
+  ],
+  [
+   "products r67 input text",
+   2838,
+   "22689ffc89f95d30"
+  ],
+  [
+   "products r68 click active|有库存商品",
+   2838,
+   "22689ffc89f95d30"
+  ],
+  [
+   "products r69 click tag-clear|清除标签",
+   2993,
+   "e02da7444e6efff4"
+  ],
+  [
+   "reports initial",
+   5127,
+   "eebb9d7976e01b8c"
+  ],
+  [
+   "reports r0 click |退款与发货",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r1 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r2 click active|退款与发货",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r3 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r4 select 波兰",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r5 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r6 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r7 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r8 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r9 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r10 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r11 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r12 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r13 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r14 select 全部站点",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r15 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r16 click active|退款与发货",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r17 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r18 click active|退款与发货",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r19 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r20 click active|退款与发货",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r21 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r22 click active|退款与发货",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r23 click stat |退款件数992026-11-07 — 2026-11-20",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "reports r24 select 法国",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r25 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r26 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r27 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r28 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r29 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r30 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r31 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r32 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r33 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r34 select 意大利",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r35 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r36 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r37 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r38 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r39 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r40 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r41 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r42 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r43 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r44 select 美国",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r45 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r46 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r47 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r48 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r49 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r50 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r51 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r52 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r53 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r54 select 德国",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r55 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r56 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r57 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r58 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r59 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r60 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r61 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r62 click active|退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r63 click stat |退款件数332026-11-07 — 2026-11-20",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "reports r64 select 英国",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r65 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r66 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r67 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r68 click active|退款与发货",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "reports r69 click stat |退款件数暂缺— — —",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "report 销售趋势",
+   2842,
+   "d07b47f4db5c1915"
+  ],
+  [
+   "report 销售趋势 site 全部站点",
+   5127,
+   "eebb9d7976e01b8c"
+  ],
+  [
+   "report 销售趋势 site 德国",
+   4841,
+   "88502ef9172c79ca"
+  ],
+  [
+   "report 销售趋势 site 法国",
+   4543,
+   "b8acd71b023ee94a"
+  ],
+  [
+   "report 销售趋势 site 英国",
+   2842,
+   "d07b47f4db5c1915"
+  ],
+  [
+   "report 销售趋势 site 意大利",
+   2842,
+   "a7275c969a465fa9"
+  ],
+  [
+   "report 销售趋势 site 波兰",
+   2842,
+   "23649ef458fc023e"
+  ],
+  [
+   "report 销售趋势 site 美国",
+   4479,
+   "6a4a9013d6bffb2e"
+  ],
+  [
+   "report 毛利与成本",
+   2797,
+   "365918305705f824"
+  ],
+  [
+   "report 毛利与成本 site 全部站点",
+   3958,
+   "4a57cbeed0251d69"
+  ],
+  [
+   "report 毛利与成本 site 德国",
+   1792,
+   "3520611de140486a"
+  ],
+  [
+   "report 毛利与成本 site 法国",
+   1690,
+   "27ac05efda75b504"
+  ],
+  [
+   "report 毛利与成本 site 英国",
+   1682,
+   "20cde2cfc6f0e0cc"
+  ],
+  [
+   "report 毛利与成本 site 意大利",
+   1682,
+   "20cde2cfc6f0e0cc"
+  ],
+  [
+   "report 毛利与成本 site 波兰",
+   1682,
+   "20cde2cfc6f0e0cc"
+  ],
+  [
+   "report 毛利与成本 site 美国",
+   2797,
+   "365918305705f824"
+  ],
+  [
+   "report 流量与转化",
+   7924,
+   "f579839434a743f7"
+  ],
+  [
+   "report 流量与转化 site 全部站点",
+   7927,
+   "ca84a370efdd4c9e"
+  ],
+  [
+   "report 流量与转化 site 德国",
+   7924,
+   "f579839434a743f7"
+  ],
+  [
+   "report 流量与转化 site 法国",
+   7924,
+   "f579839434a743f7"
+  ],
+  [
+   "report 流量与转化 site 英国",
+   1808,
+   "48ed50d63c724d63"
+  ],
+  [
+   "report 流量与转化 site 意大利",
+   1808,
+   "48ed50d63c724d63"
+  ],
+  [
+   "report 流量与转化 site 波兰",
+   1808,
+   "48ed50d63c724d63"
+  ],
+  [
+   "report 流量与转化 site 美国",
+   7924,
+   "f579839434a743f7"
+  ],
+  [
+   "report 退款与发货",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "report 退款与发货 site 全部站点",
+   8257,
+   "30e81ca9d7b33d6d"
+  ],
+  [
+   "report 退款与发货 site 德国",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "report 退款与发货 site 法国",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "report 退款与发货 site 英国",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "report 退款与发货 site 意大利",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "report 退款与发货 site 波兰",
+   1802,
+   "5cb663f767b7a037"
+  ],
+  [
+   "report 退款与发货 site 美国",
+   8250,
+   "77e14d471da05a2e"
+  ],
+  [
+   "report 商品排行",
+   1635,
+   "6585bc59aece4a07"
+  ],
+  [
+   "report 商品排行 site 全部站点",
+   2967,
+   "ca9116d61ee779fe"
+  ],
+  [
+   "report 商品排行 site 德国",
+   2960,
+   "0ad44ffca7d6f2f2"
+  ],
+  [
+   "report 商品排行 site 法国",
+   2067,
+   "6b7564e15037cf74"
+  ],
+  [
+   "report 商品排行 site 英国",
+   1635,
+   "7c5f7c9d9256d00a"
+  ],
+  [
+   "report 商品排行 site 意大利",
+   1636,
+   "9f14658b404c188b"
+  ],
+  [
+   "report 商品排行 site 波兰",
+   1635,
+   "9dacc7aa0a039430"
+  ],
+  [
+   "report 商品排行 site 美国",
+   1635,
+   "6585bc59aece4a07"
+  ],
+  [
+   "report 财务收支",
+   2219,
+   "f1cbda83a4019445"
+  ],
+  [
+   "report 财务收支 site 全部站点",
+   2614,
+   "6e7abc1d29d17026"
+  ],
+  [
+   "report 财务收支 site 德国",
+   2464,
+   "9860af729a2bbeaa"
+  ],
+  [
+   "report 财务收支 site 法国",
+   2219,
+   "f1cbda83a4019445"
+  ],
+  [
+   "report 财务收支 site 英国",
+   2413,
+   "61eb723a06a045d5"
+  ],
+  [
+   "report 财务收支 site 意大利",
+   2219,
+   "f1cbda83a4019445"
+  ],
+  [
+   "report 财务收支 site 波兰",
+   2219,
+   "f1cbda83a4019445"
+  ],
+  [
+   "report 财务收支 site 美国",
+   2219,
+   "f1cbda83a4019445"
+  ],
+  [
+   "report 库存与刊登",
+   1830,
+   "1a365b4015119332"
+  ],
+  [
+   "report 库存与刊登 site 全部站点",
+   2810,
+   "96fed4f8b73d32ec"
+  ],
+  [
+   "report 库存与刊登 site 德国",
+   1935,
+   "62ab1050f3c985ea"
+  ],
+  [
+   "report 库存与刊登 site 法国",
+   1830,
+   "fc7e12037efda271"
+  ],
+  [
+   "report 库存与刊登 site 英国",
+   1935,
+   "17cc9b3ee19d9c2a"
+  ],
+  [
+   "report 库存与刊登 site 意大利",
+   1831,
+   "38d7f4d08987ea8e"
+  ],
+  [
+   "report 库存与刊登 site 波兰",
+   1830,
+   "a60988a642132ca7"
+  ],
+  [
+   "report 库存与刊登 site 美国",
+   1830,
+   "1a365b4015119332"
+  ],
+  [
+   "report 促销活动",
+   1675,
+   "1e1d9ef900ccbfaa"
+  ],
+  [
+   "report 促销活动 site 全部站点",
+   1863,
+   "f357ded8b1ad41aa"
+  ],
+  [
+   "report 促销活动 site 德国",
+   1863,
+   "f357ded8b1ad41aa"
+  ],
+  [
+   "report 促销活动 site 法国",
+   1675,
+   "1e1d9ef900ccbfaa"
+  ],
+  [
+   "report 促销活动 site 英国",
+   1675,
+   "1e1d9ef900ccbfaa"
+  ],
+  [
+   "report 促销活动 site 意大利",
+   1675,
+   "1e1d9ef900ccbfaa"
+  ],
+  [
+   "report 促销活动 site 波兰",
+   1675,
+   "1e1d9ef900ccbfaa"
+  ],
+  [
+   "report 促销活动 site 美国",
+   1675,
+   "1e1d9ef900ccbfaa"
+  ],
+  [
+   "report 广告表现",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 全部站点",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 德国",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 法国",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 英国",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 意大利",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 波兰",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 广告表现 site 美国",
+   1545,
+   "66d3e468a7663bbc"
+  ],
+  [
+   "report 合规费用",
+   1611,
+   "071b1838132278c7"
+  ],
+  [
+   "report 合规费用 site 全部站点",
+   1766,
+   "59acf75729912b47"
+  ],
+  [
+   "report 合规费用 site 德国",
+   1670,
+   "08d8b12105a93f61"
+  ],
+  [
+   "report 合规费用 site 法国",
+   1611,
+   "071b1838132278c7"
+  ],
+  [
+   "report 合规费用 site 英国",
+   1663,
+   "2d85898b73e71a25"
+  ],
+  [
+   "report 合规费用 site 意大利",
+   1611,
+   "071b1838132278c7"
+  ],
+  [
+   "report 合规费用 site 波兰",
+   1611,
+   "071b1838132278c7"
+  ],
+  [
+   "report 合规费用 site 美国",
+   1611,
+   "071b1838132278c7"
+  ],
+  [
+   "sales report open",
+   5127,
+   "eebb9d7976e01b8c"
+  ],
+  [
+   "sales report jump",
+   2993,
+   "e02da7444e6efff4"
+  ],
+  [
+   "inventory report open",
+   2810,
+   "96fed4f8b73d32ec"
+  ],
+  [
+   "inventory report jump",
+   2993,
+   "e02da7444e6efff4"
+  ],
+  [
+   "rank report open",
+   2967,
+   "ca9116d61ee779fe"
+  ],
+  [
+   "rank report product",
+   3492,
+   "43002cab84a733eb"
+  ],
+  [
+   "after dialog close",
+   3485,
+   "43cfb193e2520de6"
+  ]
+ ]
+}

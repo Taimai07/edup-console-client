@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "大健本机连接 · 测试版",
+  "version": "0.5.0",
+  "description": "按买家和地区核验大健退货率与收藏；支持三十款分组和只读回执恢复。",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhuUOOtiICWYv9joMy+IOe4IMlPPMloyBTZYct+K3PS/HR7CBQnpUhFTbGlJtvgDuGmDto95OE90XkzCseX3Omf2xWCTv/6TdeCRz9x89vAGyb2FZ/TyIBpe28IYWXLRajxbTv2pT1ZQ9x5H+cwVoyuhUogXFH55AvJx3MVHwwbvdQB0OnKVEoc4qonSl28AhIUWDjRTp2Nh56fB5gD9MMmjYBP/VzfaKirBcrdE8o9iLPRJQJCGQTUtuOAVbiBlIgehXqmWmZU9cG+4sr30YnXyi2A/zXMVQmSAvxcWT2nQ+hQS+sL7Uf2s314fIqgEE9pr6ZrILhJMo1pwL9vBE5wIDAQAB",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "nativeMessaging"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

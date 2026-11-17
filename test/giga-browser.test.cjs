@@ -1,6 +1,6 @@
 const {test} = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
-const {GigaBrowser} = require('../desktop/giga-browser.cjs');
+const {GigaBrowser} = require('../desktop/giga-browser/giga-browser.cjs');
 function setup(t, countryId = 81, countryCode = 'DEU') {
   const dir = fs.mkdtempSync(path.join(__dirname, 'giga-integration-'));
   t.after(() => { assert.equal(path.dirname(dir), __dirname); fs.rmSync(dir, {recursive: true, force: true}); });

@@ -19,8 +19,8 @@ global.window={edup:{maintenance:async(action,args)=>{
 async function settle(runner,phase){for(let n=0;n<200;n++){if(runner.state.phase===phase && (phase!=='done'||runner.state.queue===0))return;if(runner.state.phase==='error')throw Error(runner.state.message);await new Promise(r=>setTimeout(r,5));}throw Error('STUCK '+runner.state.phase);}
 
 test('100-SKU archives remain stable, preserve legacy journal scope and do not evict old lists',async()=>{
-  const {local}=await import('../ui/listing-runner.js');
-  const {groupTask}=await import('../ui/listing-groups.js');
+  const {local}=await import('../ui/listing/listing-runner.js');
+  const {groupTask}=await import('../ui/listing/listing-groups.js');
   const old={id:'old',site:'US',codes,jobs:['existing-job'],created:1};
   data.set('edup:listing:lists:v1',JSON.stringify([old]));
   const migrated=local.ensureGroups('old');
@@ -36,7 +36,7 @@ test('100-SKU archives remain stable, preserve legacy journal scope and do not e
 });
 
 test('new pacing ignores legacy quotas, retains history and still waits 30 seconds',async()=>{
-  const {pace,usage}=await import('../ui/listing-runner.js');
+  const {pace,usage}=await import('../ui/listing/listing-runner.js');
   data.set('edup:listing:pace:v1',JSON.stringify({hourly:90,daily:450,restMinutes:5}));
   const now=Date.now();usage.record('US',2000,now);
   assert.deepEqual([pace().hourly,pace().daily,pace().restMinutes],[0,0,0.5]);
@@ -47,7 +47,7 @@ test('new pacing ignores legacy quotas, retains history and still waits 30 secon
 });
 
 test('server backup restores the original archive membership and existing job owners',async()=>{
-  const {restoredArchive}=await import('../ui/listing-groups.js');
+  const {restoredArchive}=await import('../ui/listing/listing-groups.js');
   const result={id:'server-list',site:'US',source:'store',total:205,savedAt:1,
     items:codes.map((sku,i)=>({sku,...(i<20?{preparation:{rootJobId:'existing-root'}}:{})}))};
   const restored=restoredArchive(result);
@@ -59,14 +59,14 @@ test('server backup restores the original archive membership and existing job ow
 
 test('select groups 1 and 3, pause, restart, and resume only selected unhandled SKUs',async()=>{
   data.set('edup:listing:pace:v2',JSON.stringify({restMinutes:0,hourly:0,daily:0}));
-  const {groupTask}=await import('../ui/listing-groups.js');
-  const {local,runner}=await import('../ui/listing-runner.js');currentRunner=runner;
+  const {groupTask}=await import('../ui/listing/listing-groups.js');
+  const {local,runner}=await import('../ui/listing/listing-runner.js');currentRunner=runner;
   const list=local.ensureGroups('old');
   runner.start(groupTask(list,list.groups[0]));runner.start(groupTask(list,list.groups[2]));
   runner.start(groupTask(list,list.groups[2])); // duplicate click cannot duplicate queued group
   await settle(runner,'paused');
   assert.equal(reads.length,20);assert.equal(runner.savedQueue().length,1);
-  const fresh=(await import('../ui/listing-runner.js?restart=1')).runner;currentRunner=fresh;
+  const fresh=(await import('../ui/listing/listing-runner.js?restart=1')).runner;currentRunner=fresh;
   fresh.resumeSaved();await settle(fresh,'done');
   assert.deepEqual(reads,[...codes.slice(0,100),...codes.slice(200)]);
   assert.equal(new Set(admissions).size,105);assert.equal(admissions.length,105);
@@ -74,7 +74,7 @@ test('select groups 1 and 3, pause, restart, and resume only selected unhandled 
 });
 
 test('pause during the last transport segment also stops the next selected archive',async()=>{
-  const fresh=(await import('../ui/listing-runner.js?pause-last=1')).runner;currentRunner=fresh;stopOnce=true;
+  const fresh=(await import('../ui/listing/listing-runner.js?pause-last=1')).runner;currentRunner=fresh;stopOnce=true;
   const before=reads.length;
   fresh.start({kind:'prepare',site:'US',codes:['WLAST1'],listId:'last',groupId:'last:1'});
   fresh.start({kind:'prepare',site:'US',codes:['WLAST2'],listId:'last',groupId:'last:2'});

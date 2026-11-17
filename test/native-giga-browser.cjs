@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const client=path.resolve(__dirname,'..'),root=fs.mkdtempSync(path.join(os.tmpdir(),'edup-giga-browser-'));
 app.setPath('userData',path.join(root,'profile'));
 protocol.registerSchemesAsPrivileged([{scheme:'edup',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
-const {GigaBrowser}=require('../desktop/giga-browser.cjs'),bridge=new GigaBrowser({directory:root});
+const {GigaBrowser}=require('../desktop/giga-browser/giga-browser.cjs'),bridge=new GigaBrowser({directory:root});
 const put=(name,v)=>fs.writeFileSync(path.join(root,name),JSON.stringify(v));
 put('connection.json',{extensionProtocol:4,storeCatalog:true,accountScopeV2:true,connectedAt:Date.now()/1000,inspection:{loggedIn:true,buyer:true,countryId:223,countryCode:'USA'}});
 put('heartbeat.json',{at:Date.now()/1000});
@@ -81,7 +81,7 @@ app.whenReady().then(async()=>{
   await win.loadURL('edup://console/');
   const run=code=>win.webContents.executeJavaScript(code);
   const wait=async code=>{for(let n=0;n<100;n++){if(await run(code))return;await new Promise(r=>setTimeout(r,100));}throw Error('UI_WAIT_FAILED:'+code);};
-  await run("window.selection=new Set(Array.from({length:31},(_,i)=>'WTEST'+(i+1)));import('edup://console/operations.js').then(m=>m.gigaQueries(document.querySelector('#view'),window.selection,{site:'US',siteAvailable:true}))");
+  await run("window.selection=new Set(Array.from({length:31},(_,i)=>'WTEST'+(i+1)));import('edup://console/operations/operations.js').then(m=>m.gigaQueries(document.querySelector('#view'),window.selection,{site:'US',siteAvailable:true}))");
   await wait("[...document.querySelectorAll('button')].some(b=>b.textContent==='读取云仓详情、报价和库存'&&!b.disabled)");
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='读取云仓详情、报价和库存').click()");
   await wait("[...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
@@ -101,7 +101,7 @@ app.whenReady().then(async()=>{
   if(queries.length!==2||queries.some(x=>x.args.site!=='US')||queries.flatMap(x=>x.args.codes).join(',')!=='WTEST1,WTEST31')throw Error('FROZEN_SCOPE_CHANGED');
   if(segments.map(codes=>codes.length).join(',')!=='30,1')throw Error('SEGMENTS_NOT_SEQUENTIAL');
   await wait("![...document.querySelectorAll('button')].some(b=>b.textContent==='已打开，检查并继续')");
-  await run("Promise.all([import('edup://console/giga-store.js'),import('edup://console/operations.js')]).then(([store,ops])=>{const view=document.querySelector('#view');view.replaceChildren();store.renderGigaStore(view,{site:'US',available:true,onImported:({codes})=>{window.imported=codes;view.replaceChildren();ops.gigaQueries(view,new Set(codes),{site:'US',readOnMount:true});}});})");
+  await run("Promise.all([import('edup://console/giga/giga-store.js'),import('edup://console/operations/operations.js')]).then(([store,ops])=>{const view=document.querySelector('#view');view.replaceChildren();store.renderGigaStore(view,{site:'US',available:true,onImported:({codes})=>{window.imported=codes;view.replaceChildren();ops.gigaQueries(view,new Set(codes),{site:'US',readOnMount:true});}});})");
   await run("document.querySelector('input[aria-label=\"大健店铺名称、编码或网址\"]').value='N616';[...document.querySelectorAll('button')].find(b=>b.textContent==='核对店铺').click()");
   await wait("document.body.textContent.includes('Fixture Store · N616 · 51 件商品')");
   await run("[...document.querySelectorAll('button')].find(b=>b.textContent==='收藏店铺并导入 SKU').click()");

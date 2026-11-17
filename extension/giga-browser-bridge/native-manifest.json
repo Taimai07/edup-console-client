@@ -1,0 +1,9 @@
+{
+  "name": "com.eduplink.giga_browser",
+  "description": "EDUPLINK restricted local GIGA browser bridge",
+  "path": "E:\\Codex\\2026-11-07\\https-www-gigab2b-com-index-php\\outputs\\giga-browser-native\\native-launcher-v2.exe",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://aknpgikgejahbannhnaagkljapcoadhk/"
+  ]
+}

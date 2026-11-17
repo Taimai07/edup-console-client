@@ -7,10 +7,13 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const source = fs.readFileSync(path.join(__dirname, '..', 'ui', 'listing-sheets.js'), 'utf8');
-const form = source.slice(source.indexOf('export function openQuestions'), source.indexOf('// Product drawer:'));
-const app = fs.readFileSync(path.join(__dirname, '..', 'ui', 'listing-app.js'), 'utf8');
-const lists = fs.readFileSync(path.join(__dirname, '..', 'ui', 'giga-lists.js'), 'utf8');
+// listing-sheets.js was split (client round 1); read the parts together.
+const parts = ['listing/listing-questions.js', 'listing/listing-submit-sheet.js', 'listing/listing-sheets-common.js', 'listing/listing-sheets.js'].map(name => fs.readFileSync(path.join(__dirname, '..', 'ui', name), 'utf8'));
+const source = parts.join(String.fromCharCode(10));
+const form = parts[0].slice(parts[0].indexOf('export function openQuestions'));
+// listing-app.js was split (client rounds 1 and 3); read the app and its split-out files together.
+const app = ['listing/listing-app.js', 'listing/listing-app-bar.js', 'listing/listing-app-pages.js', 'listing/listing-app-wizard.js', 'listing/listing-status.js'].map(name => fs.readFileSync(path.join(__dirname, '..', 'ui', name), 'utf8')).join(String.fromCharCode(10));
+const lists = fs.readFileSync(path.join(__dirname, '..', 'ui', 'giga', 'giga-lists.js'), 'utf8');
 
 test('the review follows its own run id and reports failed runs', () => {
   assert.match(form, /call\('run_read', \{id: current\.run\.id\}\)/);

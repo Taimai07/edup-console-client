@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const {extractCodes,fileText,importCodes}=require('../desktop/import.cjs');
 
 test('recognizes SKU text from multiple sheets in a binary XLS workbook', async () => {
- const xls = require('../desktop/sheetjs-0-20-3.cjs');
+ const xls = require('../desktop/vendor/sheetjs.cjs');
  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'edup-xls-'));
  const file = path.join(dir, 'fixture.XLS');
  try {

@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const {validateAIRequest, SKU_LIST_READONLY} = require('../shared/ai-contract.cjs');
-const {GigaBrowser} = require('../desktop/giga-browser.cjs');
+const {GigaBrowser} = require('../desktop/giga-browser/giga-browser.cjs');
 
 test('K1 permits the three SKU list operations with the declared read-only subset', () => {
   assert.deepEqual(SKU_LIST_READONLY, ['sku_list_status', 'sku_list_index']);
